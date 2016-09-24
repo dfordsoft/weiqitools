@@ -71,20 +71,10 @@ func getContent(path string) []byte {
 		fmt.Println("can't read kifu content", err)
 		return []byte("")
 	}
-	// convert to gbk, not work
-	// var b bytes.Buffer
-	// wInUTF8 := transform.NewWriter(&b, simplifiedchinese.GBK.NewEncoder())
-	// _, err = wInUTF8.Write([]byte(string([]rune(string(data)))))
-	// wInUTF8.Close()
-	// if err != nil {
-	// 	fmt.Println("can't convert kifu encoding from utf-8 to gbk", err)
-	// 	return []byte("")
-	// }
-	data = bytes.Replace(data, []byte("utf-8"), []byte("gbk"), 1)
 	if runIconvAfterSave {
-		return data[3:]
+		data = bytes.Replace(data, []byte("utf-8"), []byte("gbk"), 1)
 	}
-	return data
+	return data[3:] // remove BOM
 }
 
 type KifuPathResponse struct {
