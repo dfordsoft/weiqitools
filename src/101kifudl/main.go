@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -20,12 +21,12 @@ var (
 	client              *http.Client
 	csrfmiddlewaretoken string
 	csrftoken           string
-	quitIfExists        = true
 	quit                = false
-	runIconvAfterSave   = false
-	latestID            = 218313
-	earliestID          = 1
-	parallelCount       = 20
+	quitIfExists        bool
+	runIconvAfterSave   bool
+	latestID            int
+	earliestID          int
+	parallelCount       int
 )
 
 type Semaphore struct {
@@ -254,6 +255,42 @@ func getCSRF() {
 	}
 }
 
+func getLatestID() {
+	fullURL := fmt.Sprintf("http://101weiqi.com/chessbook/")
+	req, err := http.NewRequest("GET", fullURL, nil)
+	if err != nil {
+		fmt.Println("Could not parse get chessbook page request:", err)
+		return
+	}
+
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
+	req.Header.Set("Accept", "*/*")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Could not send get chessbook page request:", err)
+		return
+	}
+
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("could not read chessbook page")
+		return
+	}
+
+	keyword := "/chessbook/chess/"
+	startPos := bytes.Index(data, []byte(keyword))
+	if startPos > 0 {
+		s := bytes.Index(data[startPos+len(keyword):], []byte("/"))
+		id := data[startPos+len(keyword) : startPos+len(keyword)+s]
+		fmt.Println(string(id))
+		latestID, _ = strconv.Atoi(string(id))
+	} else {
+		fmt.Println("can't find keyword", keyword, string(data))
+	}
+}
+
 func main() {
 	client = &http.Client{
 		Timeout: 30 * time.Second,
@@ -261,10 +298,13 @@ func main() {
 
 	flag.BoolVar(&runIconvAfterSave, "iconv", false, "run iconv after file saved")
 	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
-	flag.IntVar(&latestID, "l", 218313, "the latest pid")
+	flag.IntVar(&latestID, "l", 0, "the latest pid")
 	flag.IntVar(&earliestID, "e", 1, "the earliest pid")
 	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
 	flag.Parse()
+	if latestID == 0 {
+		getLatestID()
+	}
 	if latestID-earliestID < parallelCount {
 		parallelCount = latestID - earliestID
 	}
