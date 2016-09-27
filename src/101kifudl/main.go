@@ -281,14 +281,13 @@ func getLatestID() {
 
 	keyword := "/chessbook/chess/"
 	startPos := bytes.Index(data, []byte(keyword))
-	if startPos > 0 {
-		s := bytes.Index(data[startPos+len(keyword):], []byte("/"))
-		id := data[startPos+len(keyword) : startPos+len(keyword)+s]
-		fmt.Println(string(id))
-		latestID, _ = strconv.Atoi(string(id))
-	} else {
+	if startPos < 0 {
 		fmt.Println("can't find keyword", keyword, string(data))
+		return
 	}
+	s := bytes.Index(data[startPos+len(keyword):], []byte("/"))
+	id := data[startPos+len(keyword) : startPos+len(keyword)+s]
+	latestID, _ = strconv.Atoi(string(id))
 }
 
 func main() {
