@@ -145,6 +145,9 @@ func download(index int, s *Semaphore) {
 startGettingPath:
 	p := getPath(index)
 	if len(p) > 0 {
+		if quit {
+			return
+		}
 		if strings.Index(p, `小围`) > 0 || strings.Index(p, `大围`) > 0 || strings.Index(p, `老围`) > 0 {
 			return
 		}
@@ -152,6 +155,9 @@ startGettingPath:
 		if !exists(fullPath) {
 			tryGettingContent := 1
 		startGettingContent:
+			if quit {
+				return
+			}
 			kifu := getContent(p)
 			if len(kifu) > 0 {
 				if bytes.Index(kifu, []byte("EV[]")) > 0 {
@@ -194,7 +200,8 @@ startGettingPath:
 				}
 			}
 		} else {
-			if !quitIfExists {
+			if quitIfExists {
+				fmt.Println(fullPath, "exists, quit now")
 				quit = true
 			}
 		}
