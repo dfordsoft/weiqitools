@@ -23,6 +23,9 @@ var (
 	quitIfExists        = true
 	quit                = false
 	runIconvAfterSave   = false
+	latestID            = 218313
+	earliestID          = 1
+	parallelCount       = 20
 )
 
 type Semaphore struct {
@@ -151,6 +154,7 @@ startGettingPath:
 			kifu := getContent(p)
 			if len(kifu) > 0 {
 				if bytes.Index(kifu, []byte("EV[]")) > 0 {
+					fmt.Println("empty ev node for", fullPath)
 					return
 				}
 				dir, _ := filepath.Split(fullPath)
@@ -202,21 +206,69 @@ startGettingPath:
 	}
 }
 
+func getCSRF() {
+	fullURL := fmt.Sprintf("http://101weiqi.com/chessbook/chess/%d", latestID)
+	req, err := http.NewRequest("GET", fullURL, nil)
+	if err != nil {
+		fmt.Println("Could not parse get latest ID page request:", err)
+		return
+	}
+
+	req.Header.Set("Referer", "http://101weiqi.com")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+	req.Header.Set("accept-encoding", `gzip, deflate, sdch`)
+	req.Header.Set("accept-language", `en-US,en;q=0.8`)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Could not send get latest ID page request:", err)
+		return
+	}
+
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("could not read latest ID page")
+		return
+	}
+
+	startPos := bytes.Index(data, []byte("csrfmiddlewaretoken"))
+	if startPos < 0 {
+		fmt.Println("could not find csrfmiddlewaretoken")
+		return
+	}
+	csrfmwtokenPos := bytes.Index(data[startPos:], []byte("value='"))
+
+	csrfmiddlewaretoken = string(data[startPos+csrfmwtokenPos+7 : startPos+csrfmwtokenPos+7+64])
+
+	cookies := resp.Cookies()
+	for _, v := range cookies {
+		ss := strings.Split(v.String(), ";")
+		for _, c := range ss {
+			if strings.Index(c, "csrftoken") >= 0 {
+				csrftoken = strings.Split(c, "=")[1]
+				return
+			}
+		}
+	}
+}
+
 func main() {
 	client = &http.Client{
 		Timeout: 30 * time.Second,
 	}
-	latestID := 218313
-	earliestID := 1
-	parallelCount := 20
+
 	flag.BoolVar(&runIconvAfterSave, "iconv", false, "run iconv after file saved")
 	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
 	flag.IntVar(&latestID, "l", 218313, "the latest pid")
 	flag.IntVar(&earliestID, "e", 1, "the earliest pid")
 	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
-	flag.StringVar(&csrfmiddlewaretoken, "m", "IEFLXplkObujFxDBpg8tpaF18s8igd07IKgUTHq4cynnXVAF4u3agM8BXUOS9861", "csrf middleware token")
-	flag.StringVar(&csrftoken, "t", "kbkR6DR5lDOxCRQyXhTPMT6aWIw5wM2fkhV02VWPJ0HBUfNCCvOwDvzKLacFpH89", "csrf token as cookie")
 	flag.Parse()
+	if latestID-earliestID < parallelCount {
+		parallelCount = latestID - earliestID
+	}
+	getCSRF()
 	fmt.Println("run iconv after file saved", runIconvAfterSave)
 	fmt.Println("quit if the target file exists", quitIfExists)
 	fmt.Println("the latest pid", latestID)
@@ -231,4 +283,5 @@ func main() {
 	}
 
 	wg.Wait()
+	fmt.Println("Done")
 }
