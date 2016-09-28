@@ -2,5 +2,6 @@
     <qresource prefix="/">
         <file>cheat.png</file>
         <file>cheat.ico</file>
+        <file>skins/mercury_wide.cheatskin</file>
     </qresource>
 </RCC>

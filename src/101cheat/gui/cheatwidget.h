@@ -28,6 +28,7 @@ private slots:
     void loadSkin();
     void showInFront();
     void quit();
+    void clipboardChanged();
 private:
     const int widgetMinWidth_ = 450;
     QPoint mouseMovePos_;

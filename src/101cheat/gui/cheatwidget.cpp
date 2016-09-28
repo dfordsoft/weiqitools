@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include <JlCompress.h>
+#include <QRegularExpression>
 #include "uglobalhotkeys.h"
 #include "cheatwidget.h"
 
@@ -17,7 +18,7 @@ CheatWidget::CheatWidget(QWidget *parent) :
 
     setFocusPolicy(Qt::ClickFocus);
     
-    if (!applySkin(":/skins/cheat.derflaskin"))
+    if (!applySkin(":/skins/mercury_wide.cheatskin"))
     {
         qCritical() << "loading skin failed";
         return;
@@ -52,6 +53,8 @@ CheatWidget::CheatWidget(QWidget *parent) :
     trayIcon_->setIcon(QIcon(":/cheat.ico"));
     trayIcon_->setToolTip(tr("101Cheat - Show answer of 101weiqi.com's puzzles!"));
     trayIcon_->show();
+
+    connect(QApplication::clipboard(), &QClipboard::dataChanged, this, &CheatWidget::clipboardChanged);
 }
 
 CheatWidget::~CheatWidget()
@@ -145,14 +148,51 @@ void CheatWidget::quit()
     qApp->quit();
 }
 
+void CheatWidget::clipboardChanged()
+{
+    QClipboard *clipboard = QApplication::clipboard();
+    QString originalText = clipboard->text();
+    // get answers
+    QString pattern("var pos_[0-9]+\\s?=\\s?\\[([^\\]]+)\\];ans.push\\(pos_[0-9]+\\);an_isoks\\.push\\(([0-9])\\)");
+
+    QRegularExpression re(pattern,
+                          QRegularExpression::MultilineOption | QRegularExpression::DotMatchesEverythingOption);
+    QRegularExpressionMatchIterator it = re.globalMatch(originalText);
+
+    while (it.hasNext())
+    {
+        QRegularExpressionMatch match = it.next();
+        QString steps = match.captured(1);
+        QString result = match.captured(2);
+        qDebug() << steps << result;
+    }
+}
+
 bool CheatWidget::applySkin(const QString& skin)
 {
     QString s;
-    if (!QFileInfo::exists(skin))
+    if (QFileInfo::exists(skin) || skin.startsWith(":/skins"))
+    {
+        QFileInfo fi(skin);
+        if (fi.suffix() == "xml")
+        {
+            // load by skin configuration file - *.xml
+            s = skin;
+        }
+        else
+        {
+            // load by skin package - *.cheatskin, should be decompressed first
+            if (!loadSkinPackage(skin, s))
+            {
+                return false;
+            }
+        }
+    }
+    else
     {
         if (applySkin(QString(":/skins/%1.cheatskin").arg(skin)))
             return true;
-        // load by skin name 
+        // load by skin name
         s = QApplication::applicationDirPath();
         const QString skinPath = QString("/skins/%1.xml").arg(skin);
 #if defined(Q_OS_MAC)
@@ -171,23 +211,6 @@ bool CheatWidget::applySkin(const QString& skin)
             s.remove(index, 4);
             s.append(".cheatskin");
             if (!loadSkinPackage(s, s))
-            {
-                return false;
-            }
-        }
-    }
-    else
-    {
-        QFileInfo fi(skin);
-        if (fi.suffix() == "xml")
-        {
-            // load by skin configuration file - *.xml
-            s = skin;
-        }
-        else
-        {
-            // load by skin package - *.cheatskin, should be decompressed first
-            if (!loadSkinPackage(skin, s))
             {
                 return false;
             }
