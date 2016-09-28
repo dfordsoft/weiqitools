@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -21,12 +22,13 @@ var (
 	client              *http.Client
 	csrfmiddlewaretoken string
 	csrftoken           string
-	quit                = false
+	quit                bool // assume it's false as initial value
 	quitIfExists        bool
 	runIconvAfterSave   bool
 	latestID            int
 	earliestID          int
 	parallelCount       int
+	downloadCount       int32
 )
 
 type Semaphore struct {
@@ -192,6 +194,7 @@ startGettingPath:
 					}
 					ioutil.WriteFile(fullPath, d, 0644)
 				}
+				atomic.AddInt32(&downloadCount, 1)
 			} else {
 				tryGettingContent++
 				if tryGettingContent < 10 {
@@ -329,5 +332,5 @@ func main() {
 	}
 
 	wg.Wait()
-	fmt.Println("Done")
+	fmt.Println("Totally downloaded", downloadCount, " SGF files")
 }
