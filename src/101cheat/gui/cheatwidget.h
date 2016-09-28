@@ -31,6 +31,7 @@ private slots:
     void clipboardChanged();
 private:
     const int widgetMinWidth_ = 450;
+    QStringList answer_;
     QPoint mouseMovePos_;
     QPixmap backgroundImage_;
     QPixmap leftPartBackgroundImage_;

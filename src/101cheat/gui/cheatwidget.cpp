@@ -9,9 +9,9 @@ CheatWidget::CheatWidget(QWidget *parent) :
     mouseMovePos_(0, 0)
 {
 #if defined(Q_OS_WIN)
-    setWindowFlags(Qt::FramelessWindowHint | Qt::Tool );
+    setWindowFlags(Qt::FramelessWindowHint | Qt::Tool | Qt::WindowStaysOnTopHint);
 #else
-    setWindowFlags(Qt::FramelessWindowHint );
+    setWindowFlags(Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
 #endif
     setAttribute(Qt::WA_InputMethodEnabled);
     setAttribute(Qt::WA_TranslucentBackground);
@@ -102,6 +102,14 @@ void CheatWidget::paintEvent(QPaintEvent* event)
         painter.drawPixmap(size.width() / 2 - 1, 0, midPartBackgroundImage_);
         painter.drawPixmap(widgetMinWidth_ - (size.width() / 2 - 1), 0, rightPartBackgroundImage_);
     }
+
+    QPen pen(painter.pen());
+    pen.setColor(0xFFFFFF);
+    painter.setPen(pen);
+
+    int i = 0;
+    for( const QString answer : answer_)
+        painter.drawText(40, 40 + 15 * i++, answer);
     QWidget::paintEvent(event);
 }
 
@@ -159,12 +167,24 @@ void CheatWidget::clipboardChanged()
                           QRegularExpression::MultilineOption | QRegularExpression::DotMatchesEverythingOption);
     QRegularExpressionMatchIterator it = re.globalMatch(originalText);
 
+    QStringList answer;
     while (it.hasNext())
     {
         QRegularExpressionMatch match = it.next();
         QString steps = match.captured(1);
         QString result = match.captured(2);
-        qDebug() << steps << result;
+        if (result.toInt() == 1)
+        {
+            auto it = std::find(answer.begin(), answer.end(), steps);
+            if (answer.end() == it)
+                answer.append(steps);
+        }
+    }
+
+    if (!answer.isEmpty())
+    {
+        answer_ = answer;
+        showInFront();
     }
 }
 
