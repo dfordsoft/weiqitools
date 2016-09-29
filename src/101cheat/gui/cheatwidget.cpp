@@ -171,7 +171,7 @@ void CheatWidget::clipboardChanged()
     while (it.hasNext())
     {
         QRegularExpressionMatch match = it.next();
-        QString steps = match.captured(1);
+        QString steps = match.captured(1).remove(QChar('\'')).replace(",,", ",");
         QString result = match.captured(2);
         if (result.toInt() == 1)
         {
