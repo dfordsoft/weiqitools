@@ -94,8 +94,14 @@ void CheatWidget::paintEvent(QPaintEvent* event)
     style()->drawPrimitive(QStyle::PE_Widget, &styleOption, &painter, this);
     QSize size(backgroundImage_.size());
 
-    if (size.width() > widgetMinWidth_)
-        painter.drawPixmap(0, 0, backgroundImage_);
+	if (size.width() > widgetMinWidth_)
+		//painter.drawPixmap(0, 0, backgroundImage_);
+	{
+		painter.drawPixmap(0, 0, topPartBackgroudImage_);
+		painter.drawPixmap(0, size.height()/2-1, midPartBackgroundImage_);
+		painter.drawPixmap(0, topPartBackgroudImage_.height() + midPartBackgroundImage_.height(), bottomPartBackgroundImage_);
+
+	}
     else
     {
         painter.drawPixmap(0, 0, leftPartBackgroundImage_);
@@ -171,7 +177,15 @@ void CheatWidget::clipboardChanged()
     while (it.hasNext())
     {
         QRegularExpressionMatch match = it.next();
-        QString steps = match.captured(1).remove(QChar('\'')).replace(",,", ",");
+        QString steps = match.captured(1);
+		for (int i = steps.size() - 1; i >= 0; i--)
+		{
+			auto ch = steps.at(i);
+			if (ch != ',' && (ch < 'a' || ch > 's'))
+				steps.remove(i, 1);
+		}
+		steps = steps.replace(",,", ",");
+
         QString result = match.captured(2);
         if (result.toInt() == 1)
         {
@@ -185,6 +199,7 @@ void CheatWidget::clipboardChanged()
     {
         answer_ = answer;
         showInFront();
+		repaint();
     }
 }
 
@@ -279,6 +294,17 @@ bool CheatWidget::applySkin(const QString& skin)
 
         size.setWidth(widgetMinWidth_);
     }
+	else
+	{
+		const int enlarge = 300;
+		topPartBackgroudImage_ = backgroundImage_.copy(0, 0,
+			size.width(), size.height() / 2 - 1);
+		midPartBackgroundImage_ = backgroundImage_.copy(0, size.height() / 2 - 1,
+			size.width(), 2).scaled(size.width(), enlarge);
+		bottomPartBackgroundImage_ = backgroundImage_.copy(0, size.height() / 2 + 1,
+			size.width(), size.height() / 2 - 1);
+		size.setHeight(size.height() + enlarge - 2);
+	}
     resize(1, 1);
     resize(size);
     

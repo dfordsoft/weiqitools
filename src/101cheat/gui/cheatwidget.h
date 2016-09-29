@@ -34,6 +34,8 @@ private:
     QStringList answer_;
     QPoint mouseMovePos_;
     QPixmap backgroundImage_;
+	QPixmap topPartBackgroudImage_;
+	QPixmap bottomPartBackgroundImage_;
     QPixmap leftPartBackgroundImage_;
     QPixmap midPartBackgroundImage_;
     QPixmap rightPartBackgroundImage_;
