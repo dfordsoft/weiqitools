@@ -95,12 +95,15 @@ void CheatWidget::paintEvent(QPaintEvent* event)
     QSize size(backgroundImage_.size());
 
 	if (size.width() > widgetMinWidth_)
-		//painter.drawPixmap(0, 0, backgroundImage_);
 	{
-		painter.drawPixmap(0, 0, topPartBackgroudImage_);
-		painter.drawPixmap(0, size.height()/2-1, midPartBackgroundImage_);
-		painter.drawPixmap(0, topPartBackgroudImage_.height() + midPartBackgroundImage_.height(), bottomPartBackgroundImage_);
-
+		if (answer_.size() <= 4)
+			painter.drawPixmap(0, 0, backgroundImage_);
+		else
+		{
+			painter.drawPixmap(0, 0, topPartBackgroudImage_);
+			painter.drawPixmap(0, size.height() / 2 - 1, midPartBackgroundImage_.scaled(size.width(), 15 * (answer_.size() -4)));
+			painter.drawPixmap(0, topPartBackgroudImage_.height() + 15 * (answer_.size() - 4), bottomPartBackgroundImage_);
+		}
 	}
     else
     {
@@ -115,7 +118,7 @@ void CheatWidget::paintEvent(QPaintEvent* event)
 
     int i = 0;
     for( const QString answer : answer_)
-        painter.drawText(40, 40 + 15 * i++, answer);
+        painter.drawText(40, 36 + 15 * i++, answer);
     QWidget::paintEvent(event);
 }
 
@@ -300,7 +303,7 @@ bool CheatWidget::applySkin(const QString& skin)
 		topPartBackgroudImage_ = backgroundImage_.copy(0, 0,
 			size.width(), size.height() / 2 - 1);
 		midPartBackgroundImage_ = backgroundImage_.copy(0, size.height() / 2 - 1,
-			size.width(), 2).scaled(size.width(), enlarge);
+			size.width(), 2);
 		bottomPartBackgroundImage_ = backgroundImage_.copy(0, size.height() / 2 + 1,
 			size.width(), size.height() / 2 - 1);
 		size.setHeight(size.height() + enlarge - 2);
