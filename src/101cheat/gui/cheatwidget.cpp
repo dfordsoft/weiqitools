@@ -115,6 +115,7 @@ void CheatWidget::paintEvent(QPaintEvent* event)
     QPen pen(painter.pen());
     pen.setColor(0xFFFFFF);
     painter.setPen(pen);
+	painter.setRenderHint(QPainter::TextAntialiasing);
 
     int i = 0;
     for( const QString answer : answer_)
