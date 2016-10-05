@@ -10,11 +10,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"semaphore"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+	"util"
 )
 
 var (
@@ -30,25 +32,6 @@ var (
 	parallelCount       int
 	downloadCount       int32
 )
-
-type Semaphore struct {
-	c chan int
-}
-
-func NewSemaphore(n int) *Semaphore {
-	s := &Semaphore{
-		c: make(chan int, n),
-	}
-	return s
-}
-
-func (s *Semaphore) Acquire() {
-	s.c <- 0
-}
-
-func (s *Semaphore) Release() {
-	<-s.c
-}
 
 func getContent(path string) []byte {
 	fullURL := fmt.Sprintf("http://101weiqi.com%s", path)
@@ -125,21 +108,7 @@ func getPath(index int) string {
 	return m.PURL
 }
 
-func exists(f string) bool {
-	stat, err := os.Stat(f)
-	if err == nil {
-		if stat.Mode()&os.ModeType == 0 {
-			return true
-		}
-		return false
-	}
-	if os.IsNotExist(err) {
-		return false
-	}
-	return false
-}
-
-func download(index int, s *Semaphore) {
+func download(index int, s *semaphore.Semaphore) {
 	defer s.Release()
 	wg.Add(1)
 	defer wg.Done()
@@ -154,7 +123,7 @@ startGettingPath:
 			return
 		}
 		fullPath := p[1:]
-		if !exists(fullPath) {
+		if !util.Exists(fullPath) {
 			tryGettingContent := 1
 		startGettingContent:
 			if quit {
@@ -167,7 +136,7 @@ startGettingPath:
 					return
 				}
 				dir, _ := filepath.Split(fullPath)
-				if !exists(dir) {
+				if !util.Exists(dir) {
 					os.MkdirAll(dir, 0777)
 				}
 				// save to file
@@ -263,6 +232,7 @@ func getCSRF() {
 			}
 		}
 	}
+	fmt.Println("cannot get csrftoken")
 }
 
 func getLatestID() {
@@ -325,7 +295,7 @@ func main() {
 	fmt.Println("the parallel routines count", parallelCount)
 	fmt.Println("csrf middleware token", csrfmiddlewaretoken)
 	fmt.Println("csrf token", csrftoken)
-	s := NewSemaphore(parallelCount)
+	s := semaphore.NewSemaphore(parallelCount)
 	for i := latestID; i >= earliestID && !quit; i-- {
 		s.Acquire()
 		go download(i, s)
