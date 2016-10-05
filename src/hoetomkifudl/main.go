@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"ic"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -17,19 +18,19 @@ import (
 )
 
 var (
-	wg                sync.WaitGroup
-	client            *http.Client
-	sessionID         string
-	userID            string
-	password          string
-	passwordMd5       string
-	quit              bool // assume it's false as initial value
-	quitIfExists      bool
-	runIconvAfterSave bool
-	latestPageID      int
-	earliestPageID    int
-	parallelCount     int
-	downloadCount     int32
+	wg               sync.WaitGroup
+	client           *http.Client
+	sessionID        string
+	userID           string
+	password         string
+	passwordMd5      string
+	saveFileEncoding string
+	quit             bool // assume it's false as initial value
+	quitIfExists     bool
+	latestPageID     int
+	earliestPageID   int
+	parallelCount    int
+	downloadCount    int32
 )
 
 func getSessionID() {
@@ -77,7 +78,9 @@ func downloadKifu(id int, s *semaphore.Semaphore) {
 		s.Release()
 		wg.Done()
 	}()
-
+	if quit {
+		return
+	}
 	fullURL := fmt.Sprintf("http://www.hoetom.com/chessmanual.jsp?id=%d", id)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
@@ -114,8 +117,16 @@ func downloadKifu(id int, s *semaphore.Semaphore) {
 	if !util.Exists(dir) {
 		os.MkdirAll(dir, 0777)
 	}
-
-	ioutil.WriteFile(fmt.Sprintf("%s/%s", dir, filename), kifu, 0644)
+	fullPath := fmt.Sprintf("%s/%s", dir, filename)
+	if quitIfExists && util.Exists(fullPath) {
+		quit = true
+		return
+	}
+	if saveFileEncoding != "gbk" {
+		kifu = ic.Convert("gbk", saveFileEncoding, kifu)
+	}
+	ioutil.WriteFile(fullPath, kifu, 0644)
+	kifu = nil
 	atomic.AddInt32(&downloadCount, 1)
 }
 
@@ -157,6 +168,9 @@ func downloadPage(page int, s *semaphore.Semaphore) {
 	regex := regexp.MustCompile(`matchinfor\.jsp\?id=([0-9]+)`)
 	ss := regex.FindAllSubmatch(data, -1)
 	for _, match := range ss {
+		if quit {
+			break
+		}
 		id, err := strconv.Atoi(string(match[1]))
 		if err != nil {
 			fmt.Printf("converting %s to number failed", string(match[1]))
@@ -171,8 +185,7 @@ func main() {
 	client = &http.Client{
 		Timeout: 30 * time.Second,
 	}
-
-	flag.BoolVar(&runIconvAfterSave, "iconv", false, "run iconv after file saved")
+	flag.StringVar(&saveFileEncoding, "encoding", "utf-8", "save SGF file encoding")
 	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
 	flag.IntVar(&latestPageID, "l", 1, "the latest page id")
 	flag.IntVar(&earliestPageID, "e", 1045, "the earliest page id")
@@ -183,7 +196,7 @@ func main() {
 	flag.Parse()
 
 	getSessionID()
-	fmt.Println("run iconv after file saved", runIconvAfterSave)
+	fmt.Println("save SGF file encoding", saveFileEncoding)
 	fmt.Println("quit if the target file exists", quitIfExists)
 	fmt.Println("the latest pid", latestPageID)
 	fmt.Println("the earliest pid", earliestPageID)

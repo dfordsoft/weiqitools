@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"ic"
 	"io/ioutil"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"semaphore"
 	"strconv"
@@ -26,7 +26,7 @@ var (
 	csrftoken           string
 	quit                bool // assume it's false as initial value
 	quitIfExists        bool
-	runIconvAfterSave   bool
+	saveFileEncoding    string
 	latestID            int
 	earliestID          int
 	parallelCount       int
@@ -60,8 +60,8 @@ func getContent(path string) []byte {
 		fmt.Println("can't read kifu content", err)
 		return []byte("")
 	}
-	if runIconvAfterSave {
-		data = bytes.Replace(data, []byte("utf-8"), []byte("gbk"), 1)
+	if saveFileEncoding != "utf-8" {
+		data = bytes.Replace(data, []byte("utf-8"), []byte(saveFileEncoding), 1)
 	}
 	return data[3:] // remove BOM
 }
@@ -139,30 +139,12 @@ startGettingPath:
 				if !util.Exists(dir) {
 					os.MkdirAll(dir, 0777)
 				}
+				if saveFileEncoding != "utf-8" {
+					kifu = ic.Convert("utf-8", saveFileEncoding, kifu)
+				}
 				// save to file
 				ioutil.WriteFile(fullPath, kifu, 0644)
 				kifu = nil
-				// convert from utf-8 to gbk
-				if runIconvAfterSave {
-					cmd := exec.Command("iconv", "-f", "utf-8", "-t", "gbk", fullPath)
-					stdout, err := cmd.StdoutPipe()
-					if err != nil {
-						fmt.Println("connecting stdout pipe failed", err)
-						return
-					}
-					if err = cmd.Start(); err != nil {
-						fmt.Println("starting iconv command failed", err)
-						return
-					}
-					d, err := ioutil.ReadAll(stdout)
-					if err != nil {
-						fmt.Println("reading stdout failed", err)
-					}
-					if err = cmd.Wait(); err != nil {
-						fmt.Println("waiting for iconv command exiting failed", err)
-					}
-					ioutil.WriteFile(fullPath, d, 0644)
-				}
 				atomic.AddInt32(&downloadCount, 1)
 			} else {
 				tryGettingContent++
@@ -275,7 +257,7 @@ func main() {
 		Timeout: 30 * time.Second,
 	}
 
-	flag.BoolVar(&runIconvAfterSave, "iconv", false, "run iconv after file saved")
+	flag.StringVar(&saveFileEncoding, "encoding", "utf-8", "save SGF file encoding")
 	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
 	flag.IntVar(&latestID, "l", 0, "the latest pid")
 	flag.IntVar(&earliestID, "e", 1, "the earliest pid")
@@ -288,7 +270,7 @@ func main() {
 		parallelCount = latestID - earliestID
 	}
 	getCSRF()
-	fmt.Println("run iconv after file saved", runIconvAfterSave)
+	fmt.Println("save SGF file encoding", saveFileEncoding)
 	fmt.Println("quit if the target file exists", quitIfExists)
 	fmt.Println("the latest pid", latestID)
 	fmt.Println("the earliest pid", earliestID)
