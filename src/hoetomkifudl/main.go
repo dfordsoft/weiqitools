@@ -108,23 +108,13 @@ func downloadKifu(id int, s *semaphore.Semaphore) {
 	}
 	ss := strings.Split(resp.Header.Get("Content-Disposition"), ";")[1]
 	filename := strings.Split(ss, "=")[1]
-	// fmt.Println(filename, []byte(filename))
-	// filename, _ = url.QueryUnescape(filename)
-	// fmt.Println(filename, []byte(filename))
-	// filename = url.QueryEscape(filename)
-	// fmt.Println(filename, []byte(filename))
-	// r := bytes.NewReader([]byte(filename))
-	// d, err := charset.NewReader(r, "gbk")
-	// content, err := ioutil.ReadAll(d)
-	// fmt.Println(string(content), content)
+	filename = filename[1 : len(filename)-1]
 
 	dir := fmt.Sprintf("%d", id/1000)
 	if !util.Exists(dir) {
 		os.MkdirAll(dir, 0777)
 	}
-	// r := bytes.NewReader([]byte(kifu))
-	// d, err := charset.NewReader(r, "gb18030")
-	// content, err := ioutil.ReadAll(d)
+
 	ioutil.WriteFile(fmt.Sprintf("%s/%s", dir, filename), kifu, 0644)
 	atomic.AddInt32(&downloadCount, 1)
 }
