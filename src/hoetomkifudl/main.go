@@ -81,10 +81,11 @@ func downloadKifu(id int, s *semaphore.Semaphore) {
 	if quit {
 		return
 	}
+	retry := 0
 	fullURL := fmt.Sprintf("http://www.hoetom.com/chessmanual.jsp?id=%d", id)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
-		fmt.Println("Could not parse login request:", err)
+		fmt.Println("Could not parse kifu request:", err)
 		return
 	}
 
@@ -96,21 +97,40 @@ func downloadKifu(id int, s *semaphore.Semaphore) {
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
 	req.Header.Set("Upgrade-Insecure-Requests", "1")
 	req.Header.Set("cookie", fmt.Sprintf("JSESSIONID=%s; userid=%s", sessionID, userID))
-
+doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Could not send login request:", err)
+		fmt.Println("Could not send kifu request:", err)
+		retry++
+		if retry < 3 {
+			time.Sleep(3 * time.Second)
+			goto doRequest
+		}
 		return
 	}
 
 	defer resp.Body.Close()
 	kifu, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("cannot read page content", err)
+		fmt.Println("cannot read kifu content", err)
+		retry++
+		if retry < 3 {
+			time.Sleep(3 * time.Second)
+			goto doRequest
+		}
 		return
 	}
-	ss := strings.Split(resp.Header.Get("Content-Disposition"), ";")[1]
-	filename := strings.Split(ss, "=")[1]
+	ss := strings.Split(resp.Header.Get("Content-Disposition"), ";")
+	if len(ss) < 2 {
+		fmt.Println("cannot get content-disposition")
+		retry++
+		if retry < 3 {
+			time.Sleep(3 * time.Second)
+			goto doRequest
+		}
+		ss = []string{"", fmt.Sprintf(`"id=%d"`, id)}
+	}
+	filename := strings.Split(ss[1], "=")[1]
 	filename = filename[1 : len(filename)-1]
 
 	dir := fmt.Sprintf("%d", id/1000)
@@ -132,14 +152,16 @@ func downloadKifu(id int, s *semaphore.Semaphore) {
 
 func downloadPage(page int, s *semaphore.Semaphore) {
 	wg.Add(1)
+	s.Acquire()
 	defer func() {
+		s.Release()
 		wg.Done()
 	}()
-
+	retry := 0
 	fullURL := fmt.Sprintf("http://www.hoetom.com/matchlatest_pro.jsp?pn=%d", page)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
-		fmt.Println("Could not parse login request:", err)
+		fmt.Println("Could not parse page request:", err)
 		return
 	}
 
@@ -151,10 +173,15 @@ func downloadPage(page int, s *semaphore.Semaphore) {
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
 	req.Header.Set("Upgrade-Insecure-Requests", "1")
 	req.Header.Set("cookie", fmt.Sprintf("JSESSIONID=%s; userid=%s", sessionID, userID))
-
+doPageRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Could not send login request:", err)
+		fmt.Println("Could not send page request:", err)
+		retry++
+		if retry < 3 {
+			time.Sleep(3 * time.Second)
+			goto doPageRequest
+		}
 		return
 	}
 
@@ -162,6 +189,11 @@ func downloadPage(page int, s *semaphore.Semaphore) {
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("cannot read page content", err)
+		retry++
+		if retry < 3 {
+			time.Sleep(3 * time.Second)
+			goto doPageRequest
+		}
 		return
 	}
 
@@ -190,9 +222,9 @@ func main() {
 	flag.IntVar(&latestPageID, "l", 1, "the latest page id")
 	flag.IntVar(&earliestPageID, "e", 1045, "the earliest page id")
 	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
-	flag.StringVar(&userID, "user", "missdeer", "login as user")
-	flag.StringVar(&password, "passwd", "", "user password")
-	flag.StringVar(&passwordMd5, "md5", "11FA17CDAB3FF2C39BB5E781BEAE646D", "user password md5")
+	// flag.StringVar(&userID, "user", "missdeer", "login as user")
+	// flag.StringVar(&password, "passwd", "", "user password")
+	// flag.StringVar(&passwordMd5, "md5", "11FA17CDAB3FF2C39BB5E781BEAE646D", "user password md5")
 	flag.Parse()
 
 	getSessionID()
@@ -201,9 +233,9 @@ func main() {
 	fmt.Println("the latest pid", latestPageID)
 	fmt.Println("the earliest pid", earliestPageID)
 	fmt.Println("the parallel routines count", parallelCount)
-	fmt.Println("user", userID)
-	fmt.Println("user password", password)
-	fmt.Println("user password md5", passwordMd5)
+	// fmt.Println("user", userID)
+	// fmt.Println("user password", password)
+	// fmt.Println("user password md5", passwordMd5)
 	fmt.Println("session id", sessionID)
 	s := semaphore.NewSemaphore(parallelCount)
 	for i := latestPageID; i <= earliestPageID && !quit; i++ {
