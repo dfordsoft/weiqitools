@@ -138,8 +138,10 @@ doRequest:
 		os.MkdirAll(dir, 0777)
 	}
 	fullPath := fmt.Sprintf("%s/%s", dir, filename)
-	if quitIfExists && util.Exists(fullPath) {
-		quit = true
+	if util.Exists(fullPath) {
+		if quitIfExists {
+			quit = true
+		}
 		return
 	}
 	if saveFileEncoding != "gbk" {

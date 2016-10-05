@@ -109,9 +109,11 @@ func getPath(index int) string {
 }
 
 func download(index int, s *semaphore.Semaphore) {
-	defer s.Release()
 	wg.Add(1)
-	defer wg.Done()
+	defer func() {
+		s.Release()
+		wg.Done()
+	}()
 	tryGettingPath := 1
 startGettingPath:
 	p := getPath(index)
