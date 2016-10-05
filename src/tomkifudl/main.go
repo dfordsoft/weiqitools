@@ -177,6 +177,7 @@ doPageRequest:
 		}
 		sgf := string(match[1])
 		sgf = strings.Replace(sgf, "../..", fmt.Sprintf("%s://%s", u.Scheme, u.Host), 1)
+		sgf = strings.Replace(sgf, "weiqi.cn.tom.com", "weiqi.tom.com", 1)
 		go downloadKifu(sgf, s)
 	}
 
