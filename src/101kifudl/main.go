@@ -263,7 +263,7 @@ func main() {
 		Timeout: 30 * time.Second,
 	}
 
-	flag.StringVar(&saveFileEncoding, "encoding", "utf-8", "save SGF file encoding")
+	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
 	flag.BoolVar(&quitIfExists, "q", false, "quit if the target file exists")
 	flag.IntVar(&latestID, "l", 0, "the latest pid")
 	flag.IntVar(&earliestID, "e", 1, "the earliest pid")

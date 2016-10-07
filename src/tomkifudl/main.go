@@ -200,7 +200,7 @@ func main() {
 	client = &http.Client{
 		Timeout: 60 * time.Second,
 	}
-	flag.StringVar(&saveFileEncoding, "encoding", "utf-8", "save SGF file encoding")
+	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
 	flag.BoolVar(&quitIfExists, "q", false, "quit if the target file exists")
 	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
 	flag.Parse()

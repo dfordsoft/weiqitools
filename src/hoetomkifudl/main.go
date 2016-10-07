@@ -132,11 +132,11 @@ doRequest:
 			time.Sleep(3 * time.Second)
 			goto doRequest
 		}
-		ss = []string{"", fmt.Sprintf(`"id=%d"`, id)}
+		ss = []string{"", fmt.Sprintf(`"id=%d.sgf"`, id)}
 	}
 	filename := strings.Split(ss[1], "=")[1]
 	filename = filename[1 : len(filename)-1]
-
+	filename = ic.ConvertString("gbk", "utf-8", filename)
 	dir := fmt.Sprintf("%d", id/1000)
 	if !util.Exists(dir) {
 		os.MkdirAll(dir, 0777)
@@ -223,7 +223,7 @@ func main() {
 	client = &http.Client{
 		Timeout: 30 * time.Second,
 	}
-	flag.StringVar(&saveFileEncoding, "encoding", "utf-8", "save SGF file encoding")
+	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
 	flag.BoolVar(&quitIfExists, "q", false, "quit if the target file exists")
 	flag.IntVar(&latestPageID, "l", 1, "the latest page id")
 	flag.IntVar(&earliestPageID, "e", 1045, "the earliest page id")
