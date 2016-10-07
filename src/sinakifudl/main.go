@@ -67,6 +67,15 @@ doRequest:
 	}
 
 	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		fmt.Println("kifu request not 200")
+		retry++
+		if retry < 3 {
+			time.Sleep(3 * time.Second)
+			goto doRequest
+		}
+		return
+	}
 	kifu, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("cannot read kifu content", err)
@@ -159,6 +168,21 @@ doPageRequest:
 		dl[sgf] = true
 		go downloadKifu(sgf, s)
 	}
+
+	regex = regexp.MustCompile(`JavaScript:gibo_load\('(http:\/\/duiyi\.sina\.com\.cn\/cgibo\/[0-9a-zA-Z\-]+\.sgf)'\)`)
+	ss = regex.FindAllSubmatch(data, -1)
+	dl = make(map[string]bool, len(ss))
+	for _, match := range ss {
+		if quit {
+			break
+		}
+		sgf := string(match[1])
+		if _, ok := dl[sgf]; ok {
+			continue
+		}
+		dl[sgf] = true
+		go downloadKifu(sgf, s)
+	}
 	dl = nil
 }
 
@@ -167,7 +191,7 @@ func main() {
 		Timeout: 30 * time.Second,
 	}
 	flag.StringVar(&saveFileEncoding, "encoding", "utf-8", "save SGF file encoding")
-	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
+	flag.BoolVar(&quitIfExists, "q", false, "quit if the target file exists")
 	flag.IntVar(&latestPageID, "l", 0, "the latest page id")
 	flag.IntVar(&earliestPageID, "e", 689, "the earliest page id")
 	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")

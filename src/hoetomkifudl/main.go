@@ -110,6 +110,10 @@ doRequest:
 	}
 
 	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		fmt.Println("kifu request not 200")
+		return
+	}
 	kifu, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("cannot read kifu content", err)
@@ -220,13 +224,10 @@ func main() {
 		Timeout: 30 * time.Second,
 	}
 	flag.StringVar(&saveFileEncoding, "encoding", "utf-8", "save SGF file encoding")
-	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
+	flag.BoolVar(&quitIfExists, "q", false, "quit if the target file exists")
 	flag.IntVar(&latestPageID, "l", 1, "the latest page id")
 	flag.IntVar(&earliestPageID, "e", 1045, "the earliest page id")
 	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
-	// flag.StringVar(&userID, "user", "missdeer", "login as user")
-	// flag.StringVar(&password, "passwd", "", "user password")
-	// flag.StringVar(&passwordMd5, "md5", "11FA17CDAB3FF2C39BB5E781BEAE646D", "user password md5")
 	flag.Parse()
 
 	getSessionID()
@@ -235,9 +236,6 @@ func main() {
 	fmt.Println("the latest pid", latestPageID)
 	fmt.Println("the earliest pid", earliestPageID)
 	fmt.Println("the parallel routines count", parallelCount)
-	// fmt.Println("user", userID)
-	// fmt.Println("user password", password)
-	// fmt.Println("user password md5", passwordMd5)
 	fmt.Println("session id", sessionID)
 	s := semaphore.NewSemaphore(parallelCount)
 	for i := latestPageID; i <= earliestPageID && !quit; i++ {

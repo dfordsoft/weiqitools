@@ -91,6 +91,15 @@ doRequest:
 	}
 
 	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		fmt.Println("kifu request not 200")
+		retry++
+		if retry < 3 {
+			time.Sleep(3 * time.Second)
+			goto doRequest
+		}
+		return
+	}
 	kifu, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println("cannot read kifu content", err)
@@ -163,7 +172,7 @@ doPageRequest:
 		return false
 	}
 
-	regex := regexp.MustCompile(`href="([a-zA-Z0-9:\/\.]+\.sgf)"`)
+	regex := regexp.MustCompile(`href="([a-zA-Z0-9:\/\-\.]+\.sgf)"`)
 	ss := regex.FindAllSubmatch(data, -1)
 
 	if len(ss) == 0 {
@@ -177,7 +186,10 @@ doPageRequest:
 		}
 		sgf := string(match[1])
 		sgf = strings.Replace(sgf, "../..", fmt.Sprintf("%s://%s", u.Scheme, u.Host), 1)
+		sgf = strings.Replace(sgf, "./..", fmt.Sprintf("%s://%s", u.Scheme, u.Host), 1)
+		sgf = strings.Replace(sgf, "..", fmt.Sprintf("%s://%s", u.Scheme, u.Host), 1)
 		sgf = strings.Replace(sgf, "weiqi.cn.tom.com", "weiqi.tom.com", 1)
+		sgf = strings.Replace(sgf, "weiqi.sports.tom.comcom", "weiqi.sports.tom.com", 1)
 		go downloadKifu(sgf, s)
 	}
 
@@ -189,7 +201,7 @@ func main() {
 		Timeout: 60 * time.Second,
 	}
 	flag.StringVar(&saveFileEncoding, "encoding", "utf-8", "save SGF file encoding")
-	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
+	flag.BoolVar(&quitIfExists, "q", false, "quit if the target file exists")
 	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
 	flag.Parse()
 
