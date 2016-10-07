@@ -1,4 +1,4 @@
-// +build darwin linux freebsd openbsd netbsd dragonfly
+// +build !windows
 
 package ic
 

@@ -8,7 +8,7 @@ func Convert(from string, to string, src []byte) []byte {
 	return src
 }
 
-func Convert(from string, to string, src string) string {
+func ConvertString(from string, to string, src string) string {
 	fmt.Println("iconv not supported on Windows")
 	return src
 }
