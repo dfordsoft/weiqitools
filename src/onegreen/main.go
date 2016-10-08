@@ -111,6 +111,10 @@ doRequest:
 	}
 	fullPath := u.Path[1:]
 	fullPath = strings.Replace(fullPath, ".html", ".sgf", -1)
+	insertPos := len(fullPath) - 7
+	fullPathByte := []byte(fullPath)
+	fullPathByte = append(fullPathByte[:insertPos], append([]byte{'/'}, fullPathByte[insertPos:]...)...)
+	fullPath = string(fullPathByte)
 	if util.Exists(fullPath) {
 		if quitIfExists {
 			quit = true
