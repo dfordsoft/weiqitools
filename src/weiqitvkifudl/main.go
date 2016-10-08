@@ -242,12 +242,9 @@ func main() {
 	s := semaphore.NewSemaphore(parallelCount)
 	for i := startID; i <= endID && !quit; i += step {
 		res := downloadIndex(i, s)
-		if len(res) == 0 {
-			break
-		}
 		for _, id := range res {
 			sgf := fmt.Sprintf("http://yi.weiqitv.com/pub/kifureview/%s", id)
-			downloadKifu(sgf, s)
+			go downloadKifu(sgf, s)
 		}
 	}
 
