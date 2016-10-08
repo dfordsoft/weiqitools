@@ -152,7 +152,7 @@ doPageRequest:
 		return
 	}
 
-	regex := regexp.MustCompile(`href=(http:\/\/www\.xgoo\.org\/qipu\/shiju\/[0-9]+\/[0-9a-zA-Z\-\_]+\.sgf)`)
+	regex := regexp.MustCompile(`href=(http:\/\/www\.xgoo\.org\/qipu\/[0-9a-zA-Z\-\_\/]+\.sgf)`)
 	ss := regex.FindAllSubmatch(data, -1)
 	for _, match := range ss {
 		if quit {
