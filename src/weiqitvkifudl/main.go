@@ -225,7 +225,7 @@ func main() {
 		Timeout: 120 * time.Second,
 	}
 	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
-	flag.BoolVar(&quitIfExists, "q", false, "quit if the target file exists")
+	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
 	flag.IntVar(&startID, "l", 0, "the start id")
 	flag.IntVar(&endID, "e", 77281, "the end id")
 	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
