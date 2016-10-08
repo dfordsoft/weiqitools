@@ -46,7 +46,6 @@ func getSessionID() {
 	req.Header.Set("Referer", "http://www.hoetom.com/index.jsp")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-	req.Header.Set("accept-encoding", `gzip, deflate, sdch`)
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
 	req.Header.Set("Cache-Control", "max-age=0")
 
@@ -93,7 +92,6 @@ func downloadKifu(id int, s *semaphore.Semaphore) {
 	req.Header.Set("Referer", "http://www.hoetom.com/matchlatest_pro.jsp")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-	req.Header.Set("accept-encoding", `gzip, deflate, sdch`)
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
 	req.Header.Set("Upgrade-Insecure-Requests", "1")
 	req.Header.Set("cookie", fmt.Sprintf("JSESSIONID=%s; userid=%s", sessionID, userID))
@@ -180,7 +178,6 @@ func downloadPage(page int, s *semaphore.Semaphore) {
 	req.Header.Set("Referer", "http://www.hoetom.com/matchlatest_pro.jsp")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-	req.Header.Set("accept-encoding", `gzip, deflate, sdch`)
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
 	req.Header.Set("Upgrade-Insecure-Requests", "1")
 	req.Header.Set("cookie", fmt.Sprintf("JSESSIONID=%s; userid=%s", sessionID, userID))
