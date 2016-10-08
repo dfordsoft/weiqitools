@@ -12,7 +12,6 @@ import (
 	"os"
 	"path"
 	"semaphore"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -144,7 +143,8 @@ type Index struct {
 }
 
 type Indexes struct {
-	Data []Index `json:"data"`
+	Data  []Index `json:"data"`
+	Total int     `json:"total"`
 }
 
 func downloadIndex(id int, s *semaphore.Semaphore) (res []string) {
@@ -165,7 +165,7 @@ func downloadIndex(id int, s *semaphore.Semaphore) (res []string) {
 		"gameSort": {"false"},
 	}
 
-	req, err := http.NewRequest("GET", `http://yi.weiqitv.com/pub/kifu`, strings.NewReader(getValues.Encode()))
+	req, err := http.NewRequest("GET", `http://yi.weiqitv.com/pub/kifu?`+getValues.Encode(), nil)
 	if err != nil {
 		fmt.Println("Could not parse download index request:", err)
 		return
@@ -175,6 +175,7 @@ func downloadIndex(id int, s *semaphore.Semaphore) (res []string) {
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
 	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("Cache-Control", "max-age=0")
 doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
@@ -214,9 +215,11 @@ doRequest:
 		return
 	}
 
+	endID = indexes.Total
 	for _, i := range indexes.Data {
 		res = append(res, i.ID)
 	}
+
 	return res
 }
 
