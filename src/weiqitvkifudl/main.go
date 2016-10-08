@@ -31,7 +31,7 @@ var (
 )
 
 const (
-	step = 10
+	step = 50
 )
 
 type KifuInfo struct {
