@@ -31,7 +31,7 @@ var (
 )
 
 const (
-	step = 50
+	step = 10 // weiqitv.com always returns 10 records no matter what value is set
 )
 
 type KifuInfo struct {
