@@ -64,7 +64,7 @@ func downloadKifu(sgf string, s *semaphore.Semaphore) {
 		return
 	}
 
-	req.Header.Set("Referer", "http://duiyi.sina.com.cn/gibo/new_gibo.asp?cur_page=689")
+	req.Header.Set("Referer", "http://yi.weiqitv.com/pub/kifu")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
