@@ -112,6 +112,11 @@ doRequest:
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		fmt.Println("kifu request not 200")
+		retry++
+		if retry < 3 {
+			time.Sleep(3 * time.Second)
+			goto doRequest
+		}
 		return
 	}
 	kifu, err := ioutil.ReadAll(resp.Body)
