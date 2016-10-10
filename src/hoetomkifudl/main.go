@@ -109,7 +109,7 @@ doRequest:
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		fmt.Println("kifu request not 200")
+		fmt.Println("kifu request not 200:", resp.StatusCode, fullURL)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -226,7 +226,7 @@ func main() {
 		Timeout: 30 * time.Second,
 	}
 	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
-	flag.BoolVar(&quitIfExists, "q", false, "quit if the target file exists")
+	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
 	flag.IntVar(&latestPageID, "l", 1, "the latest page id")
 	flag.IntVar(&earliestPageID, "e", 1045, "the earliest page id")
 	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
