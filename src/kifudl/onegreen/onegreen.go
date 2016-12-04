@@ -187,7 +187,9 @@ doPageRequest:
 	}
 }
 
-func main() {
+func download(w *sync.WaitGroup) {
+	w.Add(1)
+	defer w.Done()
 	client = &http.Client{
 		Timeout: 60 * time.Second,
 	}
