@@ -3,7 +3,7 @@
 package ic
 
 import (
-	"fmt"
+	"log"
 
 	"gopkg.in/iconv.v1"
 )
@@ -11,7 +11,7 @@ import (
 func Convert(from string, to string, src []byte) []byte {
 	cd, err := iconv.Open(to, from)
 	if err != nil {
-		fmt.Println("iconv.Open failed!")
+		log.Println("iconv.Open failed!")
 		return src
 	}
 	defer cd.Close()
@@ -24,7 +24,7 @@ func Convert(from string, to string, src []byte) []byte {
 func ConvertString(from string, to string, src string) string {
 	cd, err := iconv.Open(to, from)
 	if err != nil {
-		fmt.Println("iconv.Open failed!")
+		log.Println("iconv.Open failed!")
 		return src
 	}
 	defer cd.Close()
