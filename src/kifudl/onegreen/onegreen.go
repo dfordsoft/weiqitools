@@ -25,7 +25,7 @@ var (
 
 type Onegreen struct {
 	sync.WaitGroup
-	Sem              *semaphore.Semaphore
+	semaphore.Semaphore
 	SaveFileEncoding string
 	quit             bool // assume it's false as initial value
 	QuitIfExists     bool
@@ -39,9 +39,9 @@ type Page struct {
 
 func (o *Onegreen) downloadKifu(sgf string) {
 	o.Add(1)
-	o.Sem.Acquire()
+	o.Acquire()
 	defer func() {
-		o.Sem.Release()
+		o.Release()
 		o.Done()
 	}()
 	if o.quit {
@@ -139,9 +139,9 @@ doRequest:
 
 func (o *Onegreen) downloadPage(page string) {
 	o.Add(1)
-	o.Sem.Acquire()
+	o.Acquire()
 	defer func() {
-		o.Sem.Release()
+		o.Release()
 		o.Done()
 	}()
 	retry := 0

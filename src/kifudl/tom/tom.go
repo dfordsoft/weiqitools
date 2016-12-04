@@ -25,7 +25,7 @@ var (
 
 type Tom struct {
 	sync.WaitGroup
-	Sem              *semaphore.Semaphore
+	semaphore.Semaphore
 	SaveFileEncoding string
 	quit             bool // assume it's false as initial value
 	QuitIfExists     bool
@@ -58,9 +58,9 @@ func (t *Tom) getNextPageURL(page string) string {
 
 func (t *Tom) downloadKifu(sgf string) {
 	t.Add(1)
-	t.Sem.Acquire()
+	t.Acquire()
 	defer func() {
-		t.Sem.Release()
+		t.Release()
 		t.Done()
 	}()
 	if t.quit {
@@ -135,9 +135,9 @@ doRequest:
 
 func (t *Tom) downloadPage(page string) bool {
 	t.Add(1)
-	t.Sem.Acquire()
+	t.Acquire()
 	defer func() {
-		t.Sem.Release()
+		t.Release()
 		t.Done()
 	}()
 	retry := 0

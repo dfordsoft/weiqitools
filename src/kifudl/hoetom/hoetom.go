@@ -24,7 +24,7 @@ var (
 
 type Hoetom struct {
 	sync.WaitGroup
-	Sem              *semaphore.Semaphore
+	semaphore.Semaphore
 	sessionID        string
 	userID           string
 	password         string
@@ -76,9 +76,9 @@ func (h *Hoetom) getSessionID() {
 
 func (h *Hoetom) downloadKifu(id int) {
 	h.Add(1)
-	h.Sem.Acquire()
+	h.Acquire()
 	defer func() {
-		h.Sem.Release()
+		h.Release()
 		h.Done()
 	}()
 	if h.quit {
@@ -165,9 +165,9 @@ doRequest:
 
 func (h *Hoetom) downloadPage(page int) {
 	h.Add(1)
-	h.Sem.Acquire()
+	h.Acquire()
 	defer func() {
-		h.Sem.Release()
+		h.Release()
 		h.Done()
 	}()
 	retry := 0

@@ -23,7 +23,7 @@ var (
 
 type WeiqiTV struct {
 	sync.WaitGroup
-	Sem              *semaphore.Semaphore
+	semaphore.Semaphore
 	SaveFileEncoding string
 	quit             bool // assume it's false as initial value
 	QuitIfExists     bool
@@ -49,9 +49,9 @@ type KifuInfo struct {
 
 func (w *WeiqiTV) downloadKifu(sgf string) {
 	w.Add(1)
-	w.Sem.Acquire()
+	w.Acquire()
 	defer func() {
-		w.Sem.Release()
+		w.Release()
 		w.Done()
 	}()
 	if w.quit {
@@ -151,9 +151,9 @@ type Indexes struct {
 
 func (w *WeiqiTV) downloadIndex(id int) (res []string) {
 	w.Add(1)
-	w.Sem.Acquire()
+	w.Acquire()
 	defer func() {
-		w.Sem.Release()
+		w.Release()
 		w.Done()
 	}()
 	if w.quit {

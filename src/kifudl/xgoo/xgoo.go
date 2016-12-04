@@ -23,7 +23,7 @@ var (
 
 type Xgoo struct {
 	sync.WaitGroup
-	Sem              *semaphore.Semaphore
+	semaphore.Semaphore
 	SaveFileEncoding string
 	quit             bool // assume it's false as initial value
 	QuitIfExists     bool
@@ -34,9 +34,9 @@ type Xgoo struct {
 
 func (x *Xgoo) downloadKifu(sgf string) {
 	x.Add(1)
-	x.Sem.Acquire()
+	x.Acquire()
 	defer func() {
-		x.Sem.Release()
+		x.Release()
 		x.Done()
 	}()
 	if x.quit {
@@ -114,9 +114,9 @@ doRequest:
 
 func (x *Xgoo) downloadPage(page int) {
 	x.Add(1)
-	x.Sem.Acquire()
+	x.Acquire()
 	defer func() {
-		x.Sem.Release()
+		x.Release()
 		x.Done()
 	}()
 	retry := 0

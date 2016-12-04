@@ -25,7 +25,7 @@ var (
 
 type Lol struct {
 	sync.WaitGroup
-	Sem                 *semaphore.Semaphore
+	semaphore.Semaphore
 	csrfmiddlewaretoken string
 	csrftoken           string
 	quit                bool // assume it's false as initial value
@@ -117,7 +117,7 @@ func (l *Lol) getPath(index int) string {
 func (l *Lol) download(index int) {
 	l.Add(1)
 	defer func() {
-		l.Sem.Release()
+		l.Release()
 		l.Done()
 	}()
 	tryGettingPath := 1
@@ -278,7 +278,7 @@ func (l *Lol) Download(w *sync.WaitGroup) {
 	fmt.Println("101weiqi csrf token", l.csrftoken)
 
 	for i := l.LatestID; i >= l.EarliestID && !l.quit; i-- {
-		l.Sem.Acquire()
+		l.Acquire()
 		go l.download(i)
 	}
 

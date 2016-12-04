@@ -55,7 +55,7 @@ func main() {
 	fmt.Println("the parallel routines count", parallelCount)
 
 	h := &hoetom.Hoetom{
-		Sem:              semaphore.NewSemaphore(parallelCount),
+		Semaphore:        *semaphore.NewSemaphore(parallelCount),
 		SaveFileEncoding: saveFileEncoding,
 		QuitIfExists:     quitIfExists,
 		LatestPageID:     hoetomLatestPageID,
@@ -63,7 +63,7 @@ func main() {
 	}
 
 	l := &lol.Lol{
-		Sem:              semaphore.NewSemaphore(parallelCount),
+		Semaphore:        *semaphore.NewSemaphore(parallelCount),
 		SaveFileEncoding: saveFileEncoding,
 		QuitIfExists:     quitIfExists,
 		LatestID:         lolLatestID,
@@ -71,7 +71,7 @@ func main() {
 	}
 
 	s := &sina.Sina{
-		Sem:              semaphore.NewSemaphore(parallelCount),
+		Semaphore:        *semaphore.NewSemaphore(parallelCount),
 		SaveFileEncoding: saveFileEncoding,
 		QuitIfExists:     quitIfExists,
 		LatestPageID:     sinaLatestPageID,
@@ -79,7 +79,7 @@ func main() {
 	}
 
 	x := &xgoo.Xgoo{
-		Sem:              semaphore.NewSemaphore(parallelCount),
+		Semaphore:        *semaphore.NewSemaphore(parallelCount),
 		SaveFileEncoding: saveFileEncoding,
 		QuitIfExists:     quitIfExists,
 		LatestPageID:     xgooLatestPageID,
@@ -87,7 +87,7 @@ func main() {
 	}
 
 	w := &weiqitv.WeiqiTV{
-		Sem:              semaphore.NewSemaphore(parallelCount),
+		Semaphore:        *semaphore.NewSemaphore(parallelCount),
 		SaveFileEncoding: saveFileEncoding,
 		QuitIfExists:     quitIfExists,
 		StartID:          weiqitvStartID,
@@ -95,13 +95,13 @@ func main() {
 	}
 
 	o := &onegreen.Onegreen{
-		Sem:              semaphore.NewSemaphore(parallelCount),
+		Semaphore:        *semaphore.NewSemaphore(parallelCount),
 		SaveFileEncoding: saveFileEncoding,
 		QuitIfExists:     quitIfExists,
 	}
 
 	t := &tom.Tom{
-		Sem:              semaphore.NewSemaphore(parallelCount),
+		Semaphore:        *semaphore.NewSemaphore(parallelCount),
 		SaveFileEncoding: saveFileEncoding,
 		QuitIfExists:     quitIfExists,
 	}

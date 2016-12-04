@@ -23,7 +23,7 @@ var (
 
 type Sina struct {
 	sync.WaitGroup
-	Sem              *semaphore.Semaphore
+	semaphore.Semaphore
 	SaveFileEncoding string
 	quit             bool // assume it's false as initial value
 	QuitIfExists     bool
@@ -34,9 +34,9 @@ type Sina struct {
 
 func (s *Sina) downloadKifu(sgf string) {
 	s.Add(1)
-	s.Sem.Acquire()
+	s.Acquire()
 	defer func() {
-		s.Sem.Release()
+		s.Release()
 		s.Done()
 	}()
 	if s.quit {
@@ -114,9 +114,9 @@ doRequest:
 
 func (s *Sina) downloadPage(page int) {
 	s.Add(1)
-	s.Sem.Acquire()
+	s.Acquire()
 	defer func() {
-		s.Sem.Release()
+		s.Release()
 		s.Done()
 	}()
 	retry := 0
