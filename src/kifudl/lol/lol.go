@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"ic"
 	"io/ioutil"
+	"kifudl/ic"
 	"kifudl/semaphore"
 	"kifudl/util"
 	"log"
@@ -25,6 +25,7 @@ var (
 )
 
 type Lol struct {
+	sem                 *semaphore.Semaphore
 	csrfmiddlewaretoken string
 	csrftoken           string
 	quit                bool // assume it's false as initial value
@@ -114,10 +115,10 @@ func (l *Lol) getPath(index int) string {
 	return m.PURL
 }
 
-func (l *Lol) download(index int, s *semaphore.Semaphore) {
+func (l *Lol) download(index int) {
 	wg.Add(1)
 	defer func() {
-		s.Release()
+		l.sem.Release()
 		wg.Done()
 	}()
 	tryGettingPath := 1
@@ -280,10 +281,10 @@ func (l *Lol) Download(w *sync.WaitGroup) {
 	fmt.Println("the parallel routines count", l.ParallelCount)
 	fmt.Println("csrf middleware token", l.csrfmiddlewaretoken)
 	fmt.Println("csrf token", l.csrftoken)
-	s := semaphore.NewSemaphore(l.ParallelCount)
+	l.sem = semaphore.NewSemaphore(l.ParallelCount)
 	for i := l.LatestID; i >= l.EarliestID && !l.quit; i-- {
-		s.Acquire()
-		go l.download(i, s)
+		l.sem.Acquire()
+		go l.download(i)
 	}
 
 	wg.Wait()

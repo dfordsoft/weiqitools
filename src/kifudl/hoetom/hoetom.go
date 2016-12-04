@@ -2,8 +2,8 @@ package hoetom
 
 import (
 	"fmt"
-	"ic"
 	"io/ioutil"
+	"kifudl/ic"
 	"kifudl/semaphore"
 	"kifudl/util"
 	"log"
@@ -23,6 +23,7 @@ var (
 )
 
 type Hoetom struct {
+	sem              *semaphore.Semaphore
 	sessionID        string
 	userID           string
 	password         string
@@ -73,11 +74,11 @@ func (h *Hoetom) getSessionID() {
 	log.Println("cannot get session id")
 }
 
-func (h *Hoetom) downloadKifu(id int, s *semaphore.Semaphore) {
+func (h *Hoetom) downloadKifu(id int) {
 	wg.Add(1)
-	s.Acquire()
+	h.sem.Acquire()
 	defer func() {
-		s.Release()
+		h.sem.Release()
 		wg.Done()
 	}()
 	if h.quit {
@@ -162,11 +163,11 @@ doRequest:
 	atomic.AddInt32(&h.DownloadCount, 1)
 }
 
-func (h *Hoetom) downloadPage(page int, s *semaphore.Semaphore) {
+func (h *Hoetom) downloadPage(page int) {
 	wg.Add(1)
-	s.Acquire()
+	h.sem.Acquire()
 	defer func() {
-		s.Release()
+		h.sem.Release()
 		wg.Done()
 	}()
 	retry := 0
@@ -220,7 +221,7 @@ doPageRequest:
 			continue
 		}
 
-		go h.downloadKifu(id, s)
+		go h.downloadKifu(id)
 	}
 }
 
@@ -238,9 +239,9 @@ func (h *Hoetom) Download(w *sync.WaitGroup) {
 	fmt.Println("the earliest pid", h.EarliestPageID)
 	fmt.Println("the parallel routines count", h.ParallelCount)
 	fmt.Println("session id", h.sessionID)
-	s := semaphore.NewSemaphore(h.ParallelCount)
+	h.sem = semaphore.NewSemaphore(h.ParallelCount)
 	for i := h.LatestPageID; i <= h.EarliestPageID && !h.quit; i++ {
-		h.downloadPage(i, s)
+		h.downloadPage(i)
 	}
 
 	wg.Wait()

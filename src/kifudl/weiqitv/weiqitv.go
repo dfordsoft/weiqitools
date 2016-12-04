@@ -3,8 +3,8 @@ package weiqitv
 import (
 	"encoding/json"
 	"fmt"
-	"ic"
 	"io/ioutil"
+	"kifudl/ic"
 	"kifudl/semaphore"
 	"kifudl/util"
 	"log"

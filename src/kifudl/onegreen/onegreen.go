@@ -3,8 +3,8 @@ package onegreen
 import (
 	"bytes"
 	"fmt"
-	"ic"
 	"io/ioutil"
+	"kifudl/ic"
 	"kifudl/semaphore"
 	"kifudl/util"
 	"log"
@@ -25,6 +25,7 @@ var (
 )
 
 type Onegreen struct {
+	sem              *semaphore.Semaphore
 	SaveFileEncoding string
 	quit             bool // assume it's false as initial value
 	QuitIfExists     bool
@@ -37,11 +38,11 @@ type Page struct {
 	Count int
 }
 
-func (o *Onegreen) downloadKifu(sgf string, s *semaphore.Semaphore) {
+func (o *Onegreen) downloadKifu(sgf string) {
 	wg.Add(1)
-	s.Acquire()
+	o.sem.Acquire()
 	defer func() {
-		s.Release()
+		o.sem.Release()
 		wg.Done()
 	}()
 	if o.quit {
@@ -137,11 +138,11 @@ doRequest:
 	atomic.AddInt32(&o.DownloadCount, 1)
 }
 
-func (o *Onegreen) downloadPage(page string, s *semaphore.Semaphore) {
+func (o *Onegreen) downloadPage(page string) {
 	wg.Add(1)
-	s.Acquire()
+	o.sem.Acquire()
 	defer func() {
-		s.Release()
+		o.sem.Release()
 		wg.Done()
 	}()
 	retry := 0
@@ -185,7 +186,7 @@ doPageRequest:
 			break
 		}
 		sgf := string(match[1])
-		go o.downloadKifu(sgf, s)
+		go o.downloadKifu(sgf)
 	}
 }
 
@@ -204,14 +205,14 @@ func (o *Onegreen) Download(w *sync.WaitGroup) {
 		{"http://game.onegreen.net/weiqi/ShowClass.asp?ClassID=1223&page=%d", 514},
 	}
 
-	s := semaphore.NewSemaphore(o.ParallelCount)
+	o.sem = semaphore.NewSemaphore(o.ParallelCount)
 	for _, page := range pagelist {
 		if o.quit {
 			break
 		}
 		for i := 1; !o.quit && i <= page.Count; i++ {
 			u := fmt.Sprintf(page.URL, i)
-			o.downloadPage(u, s)
+			o.downloadPage(u)
 		}
 	}
 

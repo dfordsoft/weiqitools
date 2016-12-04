@@ -2,8 +2,8 @@ package tom
 
 import (
 	"fmt"
-	"ic"
 	"io/ioutil"
+	"kifudl/ic"
 	"kifudl/semaphore"
 	"kifudl/util"
 	"log"
