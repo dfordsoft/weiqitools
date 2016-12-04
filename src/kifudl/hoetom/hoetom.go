@@ -234,13 +234,10 @@ func (h *Hoetom) Download(w *sync.WaitGroup) {
 	}
 
 	h.getSessionID()
-	fmt.Println("save SGF file encoding", h.SaveFileEncoding)
-	fmt.Println("quit if the target file exists", h.QuitIfExists)
 	fmt.Println("the latest pid", h.LatestPageID)
 	fmt.Println("the earliest pid", h.EarliestPageID)
-	fmt.Println("the parallel routines count", h.ParallelCount)
 	fmt.Println("session id", h.sessionID)
-	h.Sem = semaphore.NewSemaphore(h.ParallelCount)
+
 	for i := h.LatestPageID; i <= h.EarliestPageID && !h.quit; i++ {
 		h.downloadPage(i)
 	}

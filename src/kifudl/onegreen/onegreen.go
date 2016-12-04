@@ -196,9 +196,6 @@ func (o *Onegreen) Download(w *sync.WaitGroup) {
 		Timeout: 60 * time.Second,
 	}
 
-	fmt.Println("save SGF file encoding", o.SaveFileEncoding)
-	fmt.Println("quit if the target file exists", o.QuitIfExists)
-
 	pagelist := []Page{
 		{"http://game.onegreen.net/weiqi/ShowClass.asp?ClassID=1218&page=%d", 1254},
 		{"http://game.onegreen.net/weiqi/ShowClass.asp?ClassID=1223&page=%d", 514},

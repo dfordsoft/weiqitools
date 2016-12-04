@@ -176,7 +176,6 @@ func (x *Xgoo) Download(w *sync.WaitGroup) {
 	fmt.Println("the latest pid", x.LatestPageID)
 	fmt.Println("the earliest pid", x.EarliestPageID)
 
-	x.Sem = semaphore.NewSemaphore(x.ParallelCount)
 	for i := x.LatestPageID; i <= x.EarliestPageID && !x.quit; i++ {
 		x.downloadPage(i)
 	}

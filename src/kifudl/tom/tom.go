@@ -219,7 +219,6 @@ func (t *Tom) Download(w *sync.WaitGroup) {
 		"http://weiqi.sports.tom.com/php/listqipu2000.html",
 	}
 
-	t.Sem = semaphore.NewSemaphore(t.ParallelCount)
 	for _, page := range pagelist {
 		p := page
 		for !t.quit && t.downloadPage(p) {

@@ -236,7 +236,6 @@ func (w *WeiqiTV) Download(ow *sync.WaitGroup) {
 	fmt.Println("the latest pid", w.StartID)
 	fmt.Println("the earliest pid", w.EndID)
 
-	w.Sem = semaphore.NewSemaphore(w.ParallelCount)
 	for i := w.StartID; i <= w.EndID && !w.quit; i += step {
 		res := w.downloadIndex(i)
 		for _, id := range res {
