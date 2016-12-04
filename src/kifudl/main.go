@@ -35,6 +35,10 @@ func main() {
 	flag.IntVar(&l.LatestID, "lol-latest-id", 0, "the latest pid of 101weiqi")
 	flag.IntVar(&l.EarliestID, "lol-earliest-id", 1, "the earliest pid of 101weiqi")
 
+	s := &sina.Sina{}
+	flag.IntVar(&s.LatestPageID, "sina-latest-page-id", 0, "the latest page id of sina")
+	flag.IntVar(&s.EarliestPageID, "sina-earliest-page-id", 689, "the earliest page id of sina")
+
 	flag.Parse()
 
 	fmt.Println("save SGF file encoding", saveFileEncoding)
@@ -49,6 +53,10 @@ func main() {
 	l.QuitIfExists = quitIfExists
 	l.ParallelCount = parallelCount
 
+	s.SaveFileEncoding = saveFileEncoding
+	s.QuitIfExists = quitIfExists
+	s.ParallelCount = parallelCount
+
 	o := &onegreen.Onegreen{
 		SaveFileEncoding: saveFileEncoding,
 		QuitIfExists:     quitIfExists,
@@ -57,7 +65,7 @@ func main() {
 
 	go l.Download(&wg)
 	go h.Download(&wg)
-	go sina.Download(&wg)
+	go s.Download(&wg)
 	go tom.Download(&wg)
 	go xgoo.Download(&wg)
 	go weiqitv.Download(&wg)

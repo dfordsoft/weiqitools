@@ -1,7 +1,6 @@
 package sina
 
 import (
-	"flag"
 	"fmt"
 	"ic"
 	"io/ioutil"
@@ -19,25 +18,29 @@ import (
 )
 
 var (
-	wg               sync.WaitGroup
-	client           *http.Client
-	saveFileEncoding string
-	quit             bool // assume it's false as initial value
-	quitIfExists     bool
-	latestPageID     int
-	earliestPageID   int
-	parallelCount    int
-	downloadCount    int32
+	wg     sync.WaitGroup
+	client *http.Client
 )
 
-func downloadKifu(sgf string, s *semaphore.Semaphore) {
+type Sina struct {
+	sem              *semaphore.Semaphore
+	SaveFileEncoding string
+	quit             bool // assume it's false as initial value
+	QuitIfExists     bool
+	LatestPageID     int
+	EarliestPageID   int
+	ParallelCount    int
+	DownloadCount    int32
+}
+
+func (s *Sina) downloadKifu(sgf string) {
 	wg.Add(1)
-	s.Acquire()
+	s.sem.Acquire()
 	defer func() {
-		s.Release()
+		s.sem.Release()
 		wg.Done()
 	}()
-	if quit {
+	if s.quit {
 		return
 	}
 	retry := 0
@@ -92,8 +95,8 @@ doRequest:
 	}
 	fullPath := "sina/" + u.Path[1:]
 	if util.Exists(fullPath) {
-		if quitIfExists {
-			quit = true
+		if s.QuitIfExists {
+			s.quit = true
 		}
 		return
 	}
@@ -102,19 +105,19 @@ doRequest:
 	if !util.Exists(dir) {
 		os.MkdirAll(dir, 0777)
 	}
-	if saveFileEncoding != "gbk" {
-		kifu = ic.Convert("gbk", saveFileEncoding, kifu)
+	if s.SaveFileEncoding != "gbk" {
+		kifu = ic.Convert("gbk", s.SaveFileEncoding, kifu)
 	}
 	ioutil.WriteFile(fullPath, kifu, 0644)
 	kifu = nil
-	atomic.AddInt32(&downloadCount, 1)
+	atomic.AddInt32(&s.DownloadCount, 1)
 }
 
-func downloadPage(page int, s *semaphore.Semaphore) {
+func (s *Sina) downloadPage(page int) {
 	wg.Add(1)
-	s.Acquire()
+	s.sem.Acquire()
 	defer func() {
-		s.Release()
+		s.sem.Release()
 		wg.Done()
 	}()
 	retry := 0
@@ -156,7 +159,7 @@ doPageRequest:
 	ss := regex.FindAllSubmatch(data, -1)
 	dl := make(map[string]bool, len(ss))
 	for _, match := range ss {
-		if quit {
+		if s.quit {
 			break
 		}
 		sgf := string(match[1])
@@ -164,14 +167,14 @@ doPageRequest:
 			continue
 		}
 		dl[sgf] = true
-		go downloadKifu(sgf, s)
+		go s.downloadKifu(sgf)
 	}
 
 	regex = regexp.MustCompile(`JavaScript:gibo_load\('(http:\/\/duiyi\.sina\.com\.cn\/cgibo\/[0-9a-zA-Z\-]+\.sgf)'\)`)
 	ss = regex.FindAllSubmatch(data, -1)
 	dl = make(map[string]bool, len(ss))
 	for _, match := range ss {
-		if quit {
+		if s.quit {
 			break
 		}
 		sgf := string(match[1])
@@ -179,34 +182,28 @@ doPageRequest:
 			continue
 		}
 		dl[sgf] = true
-		go downloadKifu(sgf, s)
+		go s.downloadKifu(sgf)
 	}
 	dl = nil
 }
 
-func Download(w *sync.WaitGroup) {
+func (s *Sina) Download(w *sync.WaitGroup) {
 	w.Add(1)
 	defer w.Done()
 	client = &http.Client{
 		Timeout: 30 * time.Second,
 	}
-	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
-	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
-	flag.IntVar(&latestPageID, "l", 0, "the latest page id")
-	flag.IntVar(&earliestPageID, "e", 689, "the earliest page id")
-	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
-	flag.Parse()
 
-	fmt.Println("save SGF file encoding", saveFileEncoding)
-	fmt.Println("quit if the target file exists", quitIfExists)
-	fmt.Println("the latest pid", latestPageID)
-	fmt.Println("the earliest pid", earliestPageID)
+	fmt.Println("save SGF file encoding", s.SaveFileEncoding)
+	fmt.Println("quit if the target file exists", s.QuitIfExists)
+	fmt.Println("the latest pid", s.LatestPageID)
+	fmt.Println("the earliest pid", s.EarliestPageID)
 
-	s := semaphore.NewSemaphore(parallelCount)
-	for i := latestPageID; i <= earliestPageID && !quit; i++ {
-		downloadPage(i, s)
+	s.sem = semaphore.NewSemaphore(s.ParallelCount)
+	for i := s.LatestPageID; i <= s.EarliestPageID && !s.quit; i++ {
+		s.downloadPage(i)
 	}
 
 	wg.Wait()
-	fmt.Println("Totally downloaded", downloadCount, " SGF files")
+	fmt.Println("Totally downloaded", s.DownloadCount, " SGF files")
 }
