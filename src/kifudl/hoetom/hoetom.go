@@ -1,7 +1,6 @@
 package hoetom
 
 import (
-	"flag"
 	"fmt"
 	"ic"
 	"io/ioutil"
@@ -19,24 +18,27 @@ import (
 )
 
 var (
-	wg               sync.WaitGroup
-	client           *http.Client
+	wg     sync.WaitGroup
+	client *http.Client
+)
+
+type Hoetom struct {
 	sessionID        string
 	userID           string
 	password         string
 	passwordMd5      string
-	saveFileEncoding string
+	SaveFileEncoding string
 	quit             bool // assume it's false as initial value
-	quitIfExists     bool
-	latestPageID     int
-	earliestPageID   int
-	parallelCount    int
-	downloadCount    int32
-)
+	QuitIfExists     bool
+	LatestPageID     int
+	EarliestPageID   int
+	ParallelCount    int
+	DownloadCount    int32
+}
 
-func getSessionID() {
+func (h *Hoetom) getSessionID() {
 	fullURL := fmt.Sprintf("http://www.hoetom.com/servlet/login")
-	postBody := fmt.Sprintf("userid=%s&passwd=%s&passwdmd5=%s", userID, password, passwordMd5)
+	postBody := fmt.Sprintf("userid=%s&passwd=%s&passwdmd5=%s", h.userID, h.password, h.passwordMd5)
 	req, err := http.NewRequest("POST", fullURL, strings.NewReader(postBody))
 	if err != nil {
 		log.Println("Could not parse login request:", err)
@@ -63,7 +65,7 @@ func getSessionID() {
 		ss := strings.Split(v.String(), ";")
 		for _, c := range ss {
 			if strings.Index(c, "JSESSIONID") >= 0 {
-				sessionID = strings.Split(c, "=")[1]
+				h.sessionID = strings.Split(c, "=")[1]
 				return
 			}
 		}
@@ -71,14 +73,14 @@ func getSessionID() {
 	log.Println("cannot get session id")
 }
 
-func downloadKifu(id int, s *semaphore.Semaphore) {
+func (h *Hoetom) downloadKifu(id int, s *semaphore.Semaphore) {
 	wg.Add(1)
 	s.Acquire()
 	defer func() {
 		s.Release()
 		wg.Done()
 	}()
-	if quit {
+	if h.quit {
 		return
 	}
 	retry := 0
@@ -95,7 +97,7 @@ func downloadKifu(id int, s *semaphore.Semaphore) {
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
 	req.Header.Set("Upgrade-Insecure-Requests", "1")
-	req.Header.Set("cookie", fmt.Sprintf("JSESSIONID=%s; userid=%s", sessionID, userID))
+	req.Header.Set("cookie", fmt.Sprintf("JSESSIONID=%s; userid=%s", h.sessionID, h.userID))
 doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
@@ -147,20 +149,20 @@ doRequest:
 	}
 	fullPath := fmt.Sprintf("hoetom/%s/%s", dir, filename)
 	if util.Exists(fullPath) {
-		if quitIfExists {
-			quit = true
+		if h.QuitIfExists {
+			h.quit = true
 		}
 		return
 	}
-	if saveFileEncoding != "gbk" {
-		kifu = ic.Convert("gbk", saveFileEncoding, kifu)
+	if h.SaveFileEncoding != "gbk" {
+		kifu = ic.Convert("gbk", h.SaveFileEncoding, kifu)
 	}
 	ioutil.WriteFile(fullPath, kifu, 0644)
 	kifu = nil
-	atomic.AddInt32(&downloadCount, 1)
+	atomic.AddInt32(&h.DownloadCount, 1)
 }
 
-func downloadPage(page int, s *semaphore.Semaphore) {
+func (h *Hoetom) downloadPage(page int, s *semaphore.Semaphore) {
 	wg.Add(1)
 	s.Acquire()
 	defer func() {
@@ -181,7 +183,7 @@ func downloadPage(page int, s *semaphore.Semaphore) {
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
 	req.Header.Set("Upgrade-Insecure-Requests", "1")
-	req.Header.Set("cookie", fmt.Sprintf("JSESSIONID=%s; userid=%s", sessionID, userID))
+	req.Header.Set("cookie", fmt.Sprintf("JSESSIONID=%s; userid=%s", h.sessionID, h.userID))
 doPageRequest:
 	resp, err := client.Do(req)
 	if err != nil {
@@ -209,7 +211,7 @@ doPageRequest:
 	regex := regexp.MustCompile(`matchinfor\.jsp\?id=([0-9]+)`)
 	ss := regex.FindAllSubmatch(data, -1)
 	for _, match := range ss {
-		if quit {
+		if h.quit {
 			break
 		}
 		id, err := strconv.Atoi(string(match[1]))
@@ -218,35 +220,29 @@ doPageRequest:
 			continue
 		}
 
-		go downloadKifu(id, s)
+		go h.downloadKifu(id, s)
 	}
 }
 
-func Download(w *sync.WaitGroup) {
+func (h *Hoetom) Download(w *sync.WaitGroup) {
 	w.Add(1)
 	defer w.Done()
 	client = &http.Client{
 		Timeout: 30 * time.Second,
 	}
-	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
-	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
-	flag.IntVar(&latestPageID, "l", 1, "the latest page id")
-	flag.IntVar(&earliestPageID, "e", 1045, "the earliest page id")
-	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
-	flag.Parse()
 
-	getSessionID()
-	fmt.Println("save SGF file encoding", saveFileEncoding)
-	fmt.Println("quit if the target file exists", quitIfExists)
-	fmt.Println("the latest pid", latestPageID)
-	fmt.Println("the earliest pid", earliestPageID)
-	fmt.Println("the parallel routines count", parallelCount)
-	fmt.Println("session id", sessionID)
-	s := semaphore.NewSemaphore(parallelCount)
-	for i := latestPageID; i <= earliestPageID && !quit; i++ {
-		downloadPage(i, s)
+	h.getSessionID()
+	fmt.Println("save SGF file encoding", h.SaveFileEncoding)
+	fmt.Println("quit if the target file exists", h.QuitIfExists)
+	fmt.Println("the latest pid", h.LatestPageID)
+	fmt.Println("the earliest pid", h.EarliestPageID)
+	fmt.Println("the parallel routines count", h.ParallelCount)
+	fmt.Println("session id", h.sessionID)
+	s := semaphore.NewSemaphore(h.ParallelCount)
+	for i := h.LatestPageID; i <= h.EarliestPageID && !h.quit; i++ {
+		h.downloadPage(i, s)
 	}
 
 	wg.Wait()
-	fmt.Println("Totally downloaded", downloadCount, " SGF files")
+	fmt.Println("Totally downloaded", h.DownloadCount, " SGF files")
 }
