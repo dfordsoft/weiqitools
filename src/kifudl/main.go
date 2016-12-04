@@ -31,6 +31,10 @@ func main() {
 	flag.IntVar(&h.LatestPageID, "hoetom-latest-page-id", 1, "the latest page id of hoetom")
 	flag.IntVar(&h.EarliestPageID, "hoetom-earliest-page-id", 1045, "the earliest page id of hoetom")
 
+	l := &lol.Lol{}
+	flag.IntVar(&l.LatestID, "lol-latest-id", 0, "the latest pid of 101weiqi")
+	flag.IntVar(&l.EarliestID, "lol-earliest-id", 1, "the earliest pid of 101weiqi")
+
 	flag.Parse()
 
 	fmt.Println("save SGF file encoding", saveFileEncoding)
@@ -41,7 +45,11 @@ func main() {
 	h.QuitIfExists = quitIfExists
 	h.ParallelCount = parallelCount
 
-	go lol.Download(&wg)
+	l.SaveFileEncoding = saveFileEncoding
+	l.QuitIfExists = quitIfExists
+	l.ParallelCount = parallelCount
+
+	go l.Download(&wg)
 	go h.Download(&wg)
 	go sina.Download(&wg)
 	go tom.Download(&wg)

@@ -3,7 +3,6 @@ package lol
 import (
 	"bytes"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"ic"
 	"io/ioutil"
@@ -21,20 +20,23 @@ import (
 )
 
 var (
-	wg                  sync.WaitGroup
-	client              *http.Client
+	wg     sync.WaitGroup
+	client *http.Client
+)
+
+type Lol struct {
 	csrfmiddlewaretoken string
 	csrftoken           string
 	quit                bool // assume it's false as initial value
-	quitIfExists        bool
-	saveFileEncoding    string
-	latestID            int
-	earliestID          int
-	parallelCount       int
-	downloadCount       int32
-)
+	QuitIfExists        bool
+	SaveFileEncoding    string
+	LatestID            int
+	EarliestID          int
+	ParallelCount       int
+	DownloadCount       int32
+}
 
-func getContent(path string) []byte {
+func (l *Lol) getContent(path string) []byte {
 	fullURL := fmt.Sprintf("http://101weiqi.com%s", path)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
@@ -46,7 +48,7 @@ func getContent(path string) []byte {
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
-	req.Header.Set("cookie", fmt.Sprintf("csrftoken=%s", csrftoken))
+	req.Header.Set("cookie", fmt.Sprintf("csrftoken=%s", l.csrftoken))
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -64,8 +66,8 @@ func getContent(path string) []byte {
 		log.Println("can't read kifu content", err)
 		return []byte("")
 	}
-	if saveFileEncoding != "utf-8" {
-		data = bytes.Replace(data, []byte("utf-8"), []byte(saveFileEncoding), 1)
+	if l.SaveFileEncoding != "utf-8" {
+		data = bytes.Replace(data, []byte("utf-8"), []byte(l.SaveFileEncoding), 1)
 	}
 	return data[3:] // remove BOM
 }
@@ -75,9 +77,9 @@ type KifuPathResponse struct {
 	PURL   string `json:"purl"`
 }
 
-func getPath(index int) string {
+func (l *Lol) getPath(index int) string {
 	// login
-	data := fmt.Sprintf(`pid=%d&csrfmiddlewaretoken=%s`, index, csrfmiddlewaretoken)
+	data := fmt.Sprintf(`pid=%d&csrfmiddlewaretoken=%s`, index, l.csrfmiddlewaretoken)
 	req, err := http.NewRequest("POST", "http://www.101weiqi.com/chessbook/download_sgf/", bytes.NewBufferString(data))
 	if err != nil {
 		log.Println("Could not parse get kifu path request:", err)
@@ -89,7 +91,7 @@ func getPath(index int) string {
 	req.Header.Set("Accept", "application/json, text/javascript, */*; q=0.01")
 	req.Header.Set("X-Requested-With", `XMLHttpRequest`)
 	req.Header.Set("Content-Type", `application/x-www-form-urlencoded; charset=UTF-8`)
-	req.Header.Set("cookie", fmt.Sprintf("csrftoken=%s", csrftoken))
+	req.Header.Set("cookie", fmt.Sprintf("csrftoken=%s", l.csrftoken))
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -112,7 +114,7 @@ func getPath(index int) string {
 	return m.PURL
 }
 
-func download(index int, s *semaphore.Semaphore) {
+func (l *Lol) download(index int, s *semaphore.Semaphore) {
 	wg.Add(1)
 	defer func() {
 		s.Release()
@@ -120,9 +122,9 @@ func download(index int, s *semaphore.Semaphore) {
 	}()
 	tryGettingPath := 1
 startGettingPath:
-	p := getPath(index)
+	p := l.getPath(index)
 	if len(p) > 0 {
-		if quit {
+		if l.quit {
 			return
 		}
 		if strings.Index(p, `小围`) > 0 || strings.Index(p, `大围`) > 0 || strings.Index(p, `老围`) > 0 {
@@ -132,10 +134,10 @@ startGettingPath:
 		if !util.Exists(fullPath) {
 			tryGettingContent := 1
 		startGettingContent:
-			if quit {
+			if l.quit {
 				return
 			}
-			kifu := getContent(p)
+			kifu := l.getContent(p)
 			if len(kifu) > 0 {
 				if bytes.Index(kifu, []byte("EV[]")) > 0 {
 					log.Println("empty ev node for", fullPath)
@@ -145,13 +147,13 @@ startGettingPath:
 				if !util.Exists(dir) {
 					os.MkdirAll(dir, 0777)
 				}
-				if saveFileEncoding != "utf-8" {
-					kifu = ic.Convert("utf-8", saveFileEncoding, kifu)
+				if l.SaveFileEncoding != "utf-8" {
+					kifu = ic.Convert("utf-8", l.SaveFileEncoding, kifu)
 				}
 				// save to file
 				ioutil.WriteFile(fullPath, kifu, 0644)
 				kifu = nil
-				atomic.AddInt32(&downloadCount, 1)
+				atomic.AddInt32(&l.DownloadCount, 1)
 			} else {
 				tryGettingContent++
 				if tryGettingContent < 10 {
@@ -160,9 +162,9 @@ startGettingPath:
 				}
 			}
 		} else {
-			if quitIfExists {
+			if l.QuitIfExists {
 				log.Println(fullPath, "exists, quit now")
-				quit = true
+				l.quit = true
 			}
 		}
 	} else {
@@ -174,8 +176,8 @@ startGettingPath:
 	}
 }
 
-func getCSRF() {
-	fullURL := fmt.Sprintf("http://101weiqi.com/chessbook/chess/%d", latestID)
+func (l *Lol) getCSRF() {
+	fullURL := fmt.Sprintf("http://101weiqi.com/chessbook/chess/%d", l.LatestID)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
 		log.Println("Could not parse get latest ID page request:", err)
@@ -207,14 +209,14 @@ func getCSRF() {
 	}
 	csrfmwtokenPos := bytes.Index(data[startPos:], []byte("value='"))
 
-	csrfmiddlewaretoken = string(data[startPos+csrfmwtokenPos+7 : startPos+csrfmwtokenPos+7+64])
+	l.csrfmiddlewaretoken = string(data[startPos+csrfmwtokenPos+7 : startPos+csrfmwtokenPos+7+64])
 
 	cookies := resp.Cookies()
 	for _, v := range cookies {
 		ss := strings.Split(v.String(), ";")
 		for _, c := range ss {
 			if strings.Index(c, "csrftoken") >= 0 {
-				csrftoken = strings.Split(c, "=")[1]
+				l.csrftoken = strings.Split(c, "=")[1]
 				return
 			}
 		}
@@ -222,7 +224,7 @@ func getCSRF() {
 	log.Println("cannot get csrftoken")
 }
 
-func getLatestID() {
+func (l *Lol) getLatestID() {
 	fullURL := fmt.Sprintf("http://101weiqi.com/chessbook/")
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
@@ -254,42 +256,36 @@ func getLatestID() {
 	}
 	s := bytes.Index(data[startPos+len(keyword):], []byte("/"))
 	id := data[startPos+len(keyword) : startPos+len(keyword)+s]
-	latestID, _ = strconv.Atoi(string(id))
+	l.LatestID, _ = strconv.Atoi(string(id))
 }
 
-func Download(w *sync.WaitGroup) {
+func (l *Lol) Download(w *sync.WaitGroup) {
 	w.Add(1)
 	defer w.Done()
 	client = &http.Client{
 		Timeout: 30 * time.Second,
 	}
 
-	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
-	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
-	flag.IntVar(&latestID, "l", 0, "the latest pid")
-	flag.IntVar(&earliestID, "e", 1, "the earliest pid")
-	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
-	flag.Parse()
-	if latestID == 0 {
-		getLatestID()
+	if l.LatestID == 0 {
+		l.getLatestID()
 	}
-	if latestID-earliestID < parallelCount {
-		parallelCount = latestID - earliestID
+	if l.LatestID-l.EarliestID < l.ParallelCount {
+		l.ParallelCount = l.LatestID - l.EarliestID
 	}
-	getCSRF()
-	fmt.Println("save SGF file encoding", saveFileEncoding)
-	fmt.Println("quit if the target file exists", quitIfExists)
-	fmt.Println("the latest pid", latestID)
-	fmt.Println("the earliest pid", earliestID)
-	fmt.Println("the parallel routines count", parallelCount)
-	fmt.Println("csrf middleware token", csrfmiddlewaretoken)
-	fmt.Println("csrf token", csrftoken)
-	s := semaphore.NewSemaphore(parallelCount)
-	for i := latestID; i >= earliestID && !quit; i-- {
+	l.getCSRF()
+	fmt.Println("save SGF file encoding", l.SaveFileEncoding)
+	fmt.Println("quit if the target file exists", l.QuitIfExists)
+	fmt.Println("the latest pid", l.LatestID)
+	fmt.Println("the earliest pid", l.EarliestID)
+	fmt.Println("the parallel routines count", l.ParallelCount)
+	fmt.Println("csrf middleware token", l.csrfmiddlewaretoken)
+	fmt.Println("csrf token", l.csrftoken)
+	s := semaphore.NewSemaphore(l.ParallelCount)
+	for i := l.LatestID; i >= l.EarliestID && !l.quit; i-- {
 		s.Acquire()
-		go download(i, s)
+		go l.download(i, s)
 	}
 
 	wg.Wait()
-	fmt.Println("Totally downloaded", downloadCount, " SGF files")
+	fmt.Println("Totally downloaded", l.DownloadCount, " SGF files")
 }
