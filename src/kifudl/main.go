@@ -15,15 +15,10 @@ import (
 	flag "github.com/ogier/pflag"
 )
 
-var (
-	wg               sync.WaitGroup
-	quitIfExists     bool
-	saveFileEncoding string
-	parallelCount    int
-	downloadCount    int32
-)
-
 func main() {
+	var quitIfExists bool
+	var saveFileEncoding string
+	var parallelCount int
 	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
 	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
 	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
@@ -106,6 +101,7 @@ func main() {
 		QuitIfExists:     quitIfExists,
 	}
 
+	var wg sync.WaitGroup
 	go l.Download(&wg)
 	go h.Download(&wg)
 	go s.Download(&wg)
