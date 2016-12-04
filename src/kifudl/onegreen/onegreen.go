@@ -49,7 +49,7 @@ func downloadKifu(sgf string, s *semaphore.Semaphore) {
 
 	req, err := http.NewRequest("GET", sgf, nil)
 	if err != nil {
-		fmt.Println("Could not parse kifu request:", err)
+		log.Println("Could not parse kifu request:", err)
 		return
 	}
 
@@ -61,7 +61,7 @@ func downloadKifu(sgf string, s *semaphore.Semaphore) {
 doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Could not send kifu request:", err)
+		log.Println("Could not send kifu request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -72,7 +72,7 @@ doRequest:
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		fmt.Println("kifu request not 200")
+		log.Println("kifu request not 200")
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -82,7 +82,7 @@ doRequest:
 	}
 	kifu, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("cannot read kifu content", err)
+		log.Println("cannot read kifu content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -94,13 +94,13 @@ doRequest:
 	// extract SGF data
 	index := bytes.Index(kifu, []byte(`sgftext=`))
 	if index < 0 {
-		fmt.Println("cannot find start keyword")
+		log.Println("cannot find start keyword")
 		return
 	}
 	kifu = kifu[index+8:]
 	index = bytes.Index(kifu, []byte(`" ALLOWSCRIPTACCESS=`))
 	if index < 0 {
-		fmt.Println("cannot find end keyword")
+		log.Println("cannot find end keyword")
 		return
 	}
 	kifu = kifu[:index]
@@ -109,7 +109,7 @@ doRequest:
 	if err != nil {
 		log.Fatal(err)
 	}
-	fullPath := u.Path[1:]
+	fullPath := "onegreen/" + u.Path[1:]
 	fullPath = strings.Replace(fullPath, ".html", ".sgf", -1)
 	insertPos := len(fullPath) - 7
 	fullPathByte := []byte(fullPath)
@@ -145,7 +145,7 @@ func downloadPage(page string, s *semaphore.Semaphore) {
 	retry := 0
 	req, err := http.NewRequest("GET", page, nil)
 	if err != nil {
-		fmt.Println("Could not parse page request:", err)
+		log.Println("Could not parse page request:", err)
 		return
 	}
 
@@ -155,7 +155,7 @@ func downloadPage(page string, s *semaphore.Semaphore) {
 doPageRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Could not send page request:", err)
+		log.Println("Could not send page request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -167,7 +167,7 @@ doPageRequest:
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("cannot read page content", err)
+		log.Println("cannot read page content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)

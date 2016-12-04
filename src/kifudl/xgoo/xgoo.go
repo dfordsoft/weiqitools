@@ -44,7 +44,7 @@ func downloadKifu(sgf string, s *semaphore.Semaphore) {
 
 	req, err := http.NewRequest("GET", sgf, nil)
 	if err != nil {
-		fmt.Println("Could not parse kifu request:", err)
+		log.Println("Could not parse kifu request:", err)
 		return
 	}
 
@@ -56,7 +56,7 @@ func downloadKifu(sgf string, s *semaphore.Semaphore) {
 doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Could not send kifu request:", err)
+		log.Println("Could not send kifu request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -67,7 +67,7 @@ doRequest:
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		fmt.Println("kifu request not 200")
+		log.Println("kifu request not 200")
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -77,7 +77,7 @@ doRequest:
 	}
 	kifu, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("cannot read kifu content", err)
+		log.Println("cannot read kifu content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -90,7 +90,7 @@ doRequest:
 	if err != nil {
 		log.Fatal(err)
 	}
-	fullPath := u.Path[1:]
+	fullPath := "xgoo/" + u.Path[1:]
 	if util.Exists(fullPath) {
 		if quitIfExists {
 			quit = true
@@ -121,7 +121,7 @@ func downloadPage(page int, s *semaphore.Semaphore) {
 	fullURL := fmt.Sprintf("http://qipu.xgoo.org/index.php?page=%d", page)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
-		fmt.Println("Could not parse page request:", err)
+		log.Println("Could not parse page request:", err)
 		return
 	}
 
@@ -131,7 +131,7 @@ func downloadPage(page int, s *semaphore.Semaphore) {
 doPageRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Could not send page request:", err)
+		log.Println("Could not send page request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -143,7 +143,7 @@ doPageRequest:
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("cannot read page content", err)
+		log.Println("cannot read page content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)

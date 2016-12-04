@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"ic"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -44,7 +45,7 @@ func getNextPageURL(page string) string {
 		n := p[index+1 : i]
 		number, err := strconv.Atoi(n)
 		if err != nil {
-			fmt.Println("converting", n, "to number failed", err)
+			log.Println("converting", n, "to number failed", err)
 			return p
 		}
 		number++
@@ -67,7 +68,7 @@ func downloadKifu(sgf string, s *semaphore.Semaphore) {
 
 	req, err := http.NewRequest("GET", sgf, nil)
 	if err != nil {
-		fmt.Println("Could not parse kifu request:", err)
+		log.Println("Could not parse kifu request:", err)
 		return
 	}
 
@@ -80,7 +81,7 @@ func downloadKifu(sgf string, s *semaphore.Semaphore) {
 doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Could not send kifu request:", err)
+		log.Println("Could not send kifu request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -91,7 +92,7 @@ doRequest:
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		fmt.Println("kifu request not 200")
+		log.Println("kifu request not 200")
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -101,7 +102,7 @@ doRequest:
 	}
 	kifu, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("cannot read kifu content", err)
+		log.Println("cannot read kifu content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -110,7 +111,7 @@ doRequest:
 		return
 	}
 
-	fullPath := u.Path[1:]
+	fullPath := "tom/" + u.Path[1:]
 	if util.Exists(fullPath) {
 		if quitIfExists {
 			quit = true
@@ -140,7 +141,7 @@ func downloadPage(page string, s *semaphore.Semaphore) bool {
 	retry := 0
 	req, err := http.NewRequest("GET", page, nil)
 	if err != nil {
-		fmt.Println("Could not parse page request:", err)
+		log.Println("Could not parse page request:", err)
 		return false
 	}
 
@@ -150,7 +151,7 @@ func downloadPage(page string, s *semaphore.Semaphore) bool {
 doPageRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Could not send page request:", err)
+		log.Println("Could not send page request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -162,7 +163,7 @@ doPageRequest:
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("cannot read page content", err)
+		log.Println("cannot read page content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)

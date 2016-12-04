@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"ic"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -38,7 +39,7 @@ func getSessionID() {
 	postBody := fmt.Sprintf("userid=%s&passwd=%s&passwdmd5=%s", userID, password, passwordMd5)
 	req, err := http.NewRequest("POST", fullURL, strings.NewReader(postBody))
 	if err != nil {
-		fmt.Println("Could not parse login request:", err)
+		log.Println("Could not parse login request:", err)
 		return
 	}
 
@@ -51,7 +52,7 @@ func getSessionID() {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Could not send login request:", err)
+		log.Println("Could not send login request:", err)
 		return
 	}
 
@@ -67,7 +68,7 @@ func getSessionID() {
 			}
 		}
 	}
-	fmt.Println("cannot get session id")
+	log.Println("cannot get session id")
 }
 
 func downloadKifu(id int, s *semaphore.Semaphore) {
@@ -84,7 +85,7 @@ func downloadKifu(id int, s *semaphore.Semaphore) {
 	fullURL := fmt.Sprintf("http://www.hoetom.com/chessmanual.jsp?id=%d", id)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
-		fmt.Println("Could not parse kifu request:", err)
+		log.Println("Could not parse kifu request:", err)
 		return
 	}
 
@@ -98,7 +99,7 @@ func downloadKifu(id int, s *semaphore.Semaphore) {
 doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Could not send kifu request:", err)
+		log.Println("Could not send kifu request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -109,7 +110,7 @@ doRequest:
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		fmt.Println("kifu request not 200:", resp.StatusCode, fullURL)
+		log.Println("kifu request not 200:", resp.StatusCode, fullURL)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -119,7 +120,7 @@ doRequest:
 	}
 	kifu, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("cannot read kifu content", err)
+		log.Println("cannot read kifu content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -129,7 +130,7 @@ doRequest:
 	}
 	ss := strings.Split(resp.Header.Get("Content-Disposition"), ";")
 	if len(ss) < 2 {
-		fmt.Println("cannot get content-disposition")
+		log.Println("cannot get content-disposition")
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -144,7 +145,7 @@ doRequest:
 	if !util.Exists(dir) {
 		os.MkdirAll(dir, 0777)
 	}
-	fullPath := fmt.Sprintf("%s/%s", dir, filename)
+	fullPath := fmt.Sprintf("hoetom/%s/%s", dir, filename)
 	if util.Exists(fullPath) {
 		if quitIfExists {
 			quit = true
@@ -170,7 +171,7 @@ func downloadPage(page int, s *semaphore.Semaphore) {
 	fullURL := fmt.Sprintf("http://www.hoetom.com/matchlatest_pro.jsp?pn=%d", page)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
-		fmt.Println("Could not parse page request:", err)
+		log.Println("Could not parse page request:", err)
 		return
 	}
 
@@ -184,7 +185,7 @@ func downloadPage(page int, s *semaphore.Semaphore) {
 doPageRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Could not send page request:", err)
+		log.Println("Could not send page request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -196,7 +197,7 @@ doPageRequest:
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("cannot read page content", err)
+		log.Println("cannot read page content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -213,7 +214,7 @@ doPageRequest:
 		}
 		id, err := strconv.Atoi(string(match[1]))
 		if err != nil {
-			fmt.Printf("converting %s to number failed", string(match[1]))
+			log.Printf("converting %s to number failed", string(match[1]))
 			continue
 		}
 

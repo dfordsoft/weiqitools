@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"ic"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -37,7 +38,7 @@ func getContent(path string) []byte {
 	fullURL := fmt.Sprintf("http://101weiqi.com%s", path)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
-		fmt.Println("Could not parse get kifu request:", err)
+		log.Println("Could not parse get kifu request:", err)
 		return []byte("")
 	}
 
@@ -49,18 +50,18 @@ func getContent(path string) []byte {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Could not send get kifu request:", err)
+		log.Println("Could not send get kifu request:", err)
 		return []byte("")
 	}
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		fmt.Println("kifu request not 200")
+		log.Println("kifu request not 200")
 		return []byte("")
 	}
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("can't read kifu content", err)
+		log.Println("can't read kifu content", err)
 		return []byte("")
 	}
 	if saveFileEncoding != "utf-8" {
@@ -79,7 +80,7 @@ func getPath(index int) string {
 	data := fmt.Sprintf(`pid=%d&csrfmiddlewaretoken=%s`, index, csrfmiddlewaretoken)
 	req, err := http.NewRequest("POST", "http://www.101weiqi.com/chessbook/download_sgf/", bytes.NewBufferString(data))
 	if err != nil {
-		fmt.Println("Could not parse get kifu path request:", err)
+		log.Println("Could not parse get kifu path request:", err)
 		return ""
 	}
 
@@ -92,20 +93,20 @@ func getPath(index int) string {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Could not send get kifu path request:", err)
+		log.Println("Could not send get kifu path request:", err)
 		return ""
 	}
 
 	defer resp.Body.Close()
 	d, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("can't read kifu path")
+		log.Println("can't read kifu path")
 		return ""
 	}
 	var m KifuPathResponse
 	err = json.Unmarshal(d, &m)
 	if err != nil {
-		fmt.Println("can't unmarshal json", string(d), err)
+		log.Println("can't unmarshal json", string(d), err)
 		return ""
 	}
 	return m.PURL
@@ -127,7 +128,7 @@ startGettingPath:
 		if strings.Index(p, `小围`) > 0 || strings.Index(p, `大围`) > 0 || strings.Index(p, `老围`) > 0 {
 			return
 		}
-		fullPath := p[1:]
+		fullPath := "101weiqi/" + p[1:]
 		if !util.Exists(fullPath) {
 			tryGettingContent := 1
 		startGettingContent:
@@ -137,7 +138,7 @@ startGettingPath:
 			kifu := getContent(p)
 			if len(kifu) > 0 {
 				if bytes.Index(kifu, []byte("EV[]")) > 0 {
-					fmt.Println("empty ev node for", fullPath)
+					log.Println("empty ev node for", fullPath)
 					return
 				}
 				dir, _ := filepath.Split(fullPath)
@@ -160,7 +161,7 @@ startGettingPath:
 			}
 		} else {
 			if quitIfExists {
-				fmt.Println(fullPath, "exists, quit now")
+				log.Println(fullPath, "exists, quit now")
 				quit = true
 			}
 		}
@@ -177,7 +178,7 @@ func getCSRF() {
 	fullURL := fmt.Sprintf("http://101weiqi.com/chessbook/chess/%d", latestID)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
-		fmt.Println("Could not parse get latest ID page request:", err)
+		log.Println("Could not parse get latest ID page request:", err)
 		return
 	}
 
@@ -188,20 +189,20 @@ func getCSRF() {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Could not send get latest ID page request:", err)
+		log.Println("Could not send get latest ID page request:", err)
 		return
 	}
 
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("could not read latest ID page")
+		log.Println("could not read latest ID page")
 		return
 	}
 
 	startPos := bytes.Index(data, []byte("csrfmiddlewaretoken"))
 	if startPos < 0 {
-		fmt.Println("could not find csrfmiddlewaretoken")
+		log.Println("could not find csrfmiddlewaretoken")
 		return
 	}
 	csrfmwtokenPos := bytes.Index(data[startPos:], []byte("value='"))
@@ -218,14 +219,14 @@ func getCSRF() {
 			}
 		}
 	}
-	fmt.Println("cannot get csrftoken")
+	log.Println("cannot get csrftoken")
 }
 
 func getLatestID() {
 	fullURL := fmt.Sprintf("http://101weiqi.com/chessbook/")
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
-		fmt.Println("Could not parse get chessbook page request:", err)
+		log.Println("Could not parse get chessbook page request:", err)
 		return
 	}
 
@@ -234,21 +235,21 @@ func getLatestID() {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Could not send get chessbook page request:", err)
+		log.Println("Could not send get chessbook page request:", err)
 		return
 	}
 
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("could not read chessbook page")
+		log.Println("could not read chessbook page")
 		return
 	}
 
 	keyword := "/chessbook/chess/"
 	startPos := bytes.Index(data, []byte(keyword))
 	if startPos < 0 {
-		fmt.Println("can't find keyword", keyword, string(data))
+		log.Println("can't find keyword", keyword, string(data))
 		return
 	}
 	s := bytes.Index(data[startPos+len(keyword):], []byte("/"))

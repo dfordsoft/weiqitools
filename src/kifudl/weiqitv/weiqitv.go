@@ -59,7 +59,7 @@ func downloadKifu(sgf string, s *semaphore.Semaphore) {
 
 	req, err := http.NewRequest("GET", sgf, nil)
 	if err != nil {
-		fmt.Println("Could not parse kifu request:", err)
+		log.Println("Could not parse kifu request:", err)
 		return
 	}
 
@@ -71,7 +71,7 @@ func downloadKifu(sgf string, s *semaphore.Semaphore) {
 doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Could not send kifu request:", err)
+		log.Println("Could not send kifu request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -82,7 +82,7 @@ doRequest:
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		fmt.Println("kifu request not 200")
+		log.Println("kifu request not 200")
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -92,7 +92,7 @@ doRequest:
 	}
 	kifu, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("cannot read kifu content", err)
+		log.Println("cannot read kifu content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -103,7 +103,7 @@ doRequest:
 
 	var kifuInfo KifuInfo
 	if err := json.Unmarshal(kifu, &kifuInfo); err != nil {
-		fmt.Println("cannot unmarshal json", err)
+		log.Println("cannot unmarshal json", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -116,7 +116,7 @@ doRequest:
 	if err != nil {
 		log.Fatal(err)
 	}
-	fullPath := fmt.Sprintf("%s_%s_%s_%s_vs_%s_%s.sgf",
+	fullPath := fmt.Sprintf("weiqitv/%s_%s_%s_%s_vs_%s_%s.sgf",
 		u.Path[1:], kifuInfo.Name, kifuInfo.B, kifuInfo.LB, kifuInfo.W, kifuInfo.LW)
 	if util.Exists(fullPath) {
 		if quitIfExists {
@@ -167,7 +167,7 @@ func downloadIndex(id int, s *semaphore.Semaphore) (res []string) {
 
 	req, err := http.NewRequest("GET", `http://yi.weiqitv.com/pub/kifu?`+getValues.Encode(), nil)
 	if err != nil {
-		fmt.Println("Could not parse download index request:", err)
+		log.Println("Could not parse download index request:", err)
 		return
 	}
 
@@ -179,7 +179,7 @@ func downloadIndex(id int, s *semaphore.Semaphore) (res []string) {
 doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		fmt.Println("Could not send download index request:", err)
+		log.Println("Could not send download index request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -190,7 +190,7 @@ doRequest:
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		fmt.Println("index request not 200")
+		log.Println("index request not 200")
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -200,7 +200,7 @@ doRequest:
 	}
 	index, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Println("cannot read index content", err, string(index))
+		log.Println("cannot read index content", err, string(index))
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -211,7 +211,7 @@ doRequest:
 
 	var indexes Indexes
 	if err := json.Unmarshal(index, &indexes); err != nil {
-		fmt.Println("cannot unmarshal indexes", err)
+		log.Println("cannot unmarshal indexes", err)
 		return
 	}
 
