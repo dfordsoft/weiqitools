@@ -6,17 +6,17 @@ import (
 	"fmt"
 	"ic"
 	"io/ioutil"
+	"kifudl/semaphore"
+	"kifudl/util"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-	"semaphore"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
-	"util"
 )
 
 var (

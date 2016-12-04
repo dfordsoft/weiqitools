@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"ic"
 	"io/ioutil"
+	"kifudl/semaphore"
+	"kifudl/util"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"regexp"
-	"semaphore"
 	"sync"
 	"sync/atomic"
 	"time"
-	"util"
 )
 
 var (
