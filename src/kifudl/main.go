@@ -63,10 +63,16 @@ func main() {
 		ParallelCount:    parallelCount,
 	}
 
+	t := &tom.Tom{
+		SaveFileEncoding: saveFileEncoding,
+		QuitIfExists:     quitIfExists,
+		ParallelCount:    parallelCount,
+	}
+
 	go l.Download(&wg)
 	go h.Download(&wg)
 	go s.Download(&wg)
-	go tom.Download(&wg)
+	go t.Download(&wg)
 	go xgoo.Download(&wg)
 	go weiqitv.Download(&wg)
 	go o.Download(&wg)

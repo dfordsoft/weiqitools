@@ -1,7 +1,6 @@
 package tom
 
 import (
-	"flag"
 	"fmt"
 	"ic"
 	"io/ioutil"
@@ -21,16 +20,20 @@ import (
 )
 
 var (
-	wg               sync.WaitGroup
-	client           *http.Client
-	saveFileEncoding string
-	quit             bool // assume it's false as initial value
-	quitIfExists     bool
-	parallelCount    int
-	downloadCount    int32
+	wg     sync.WaitGroup
+	client *http.Client
 )
 
-func getNextPageURL(page string) string {
+type Tom struct {
+	sem              *semaphore.Semaphore
+	SaveFileEncoding string
+	quit             bool // assume it's false as initial value
+	QuitIfExists     bool
+	ParallelCount    int
+	DownloadCount    int32
+}
+
+func (t *Tom) getNextPageURL(page string) string {
 	p := page
 	index := strings.Index(page, "_")
 	if index < 0 {
@@ -54,14 +57,14 @@ func getNextPageURL(page string) string {
 	return p
 }
 
-func downloadKifu(sgf string, s *semaphore.Semaphore) {
+func (t *Tom) downloadKifu(sgf string) {
 	wg.Add(1)
-	s.Acquire()
+	t.sem.Acquire()
 	defer func() {
-		s.Release()
+		t.sem.Release()
 		wg.Done()
 	}()
-	if quit {
+	if t.quit {
 		return
 	}
 	retry := 0
@@ -113,8 +116,8 @@ doRequest:
 
 	fullPath := "tom/" + u.Path[1:]
 	if util.Exists(fullPath) {
-		if quitIfExists {
-			quit = true
+		if t.QuitIfExists {
+			t.quit = true
 		}
 		return
 	}
@@ -123,19 +126,19 @@ doRequest:
 	if !util.Exists(dir) {
 		os.MkdirAll(dir, 0777)
 	}
-	if saveFileEncoding != "gbk" {
-		kifu = ic.Convert("gbk", saveFileEncoding, kifu)
+	if t.SaveFileEncoding != "gbk" {
+		kifu = ic.Convert("gbk", t.SaveFileEncoding, kifu)
 	}
 	ioutil.WriteFile(fullPath, kifu, 0644)
 	kifu = nil
-	atomic.AddInt32(&downloadCount, 1)
+	atomic.AddInt32(&t.DownloadCount, 1)
 }
 
-func downloadPage(page string, s *semaphore.Semaphore) bool {
+func (t *Tom) downloadPage(page string) bool {
 	wg.Add(1)
-	s.Acquire()
+	t.sem.Acquire()
 	defer func() {
-		s.Release()
+		t.sem.Release()
 		wg.Done()
 	}()
 	retry := 0
@@ -181,7 +184,7 @@ doPageRequest:
 
 	u, _ := url.Parse(page)
 	for _, match := range ss {
-		if quit {
+		if t.quit {
 			break
 		}
 		sgf := string(match[1])
@@ -190,25 +193,18 @@ doPageRequest:
 		sgf = strings.Replace(sgf, "..", fmt.Sprintf("%s://%s", u.Scheme, u.Host), 1)
 		sgf = strings.Replace(sgf, "weiqi.cn.tom.com", "weiqi.tom.com", 1)
 		sgf = strings.Replace(sgf, "weiqi.sports.tom.comcom", "weiqi.sports.tom.com", 1)
-		go downloadKifu(sgf, s)
+		go t.downloadKifu(sgf)
 	}
 
 	return true
 }
 
-func Download(w *sync.WaitGroup) {
+func (t *Tom) Download(w *sync.WaitGroup) {
 	w.Add(1)
 	defer w.Done()
 	client = &http.Client{
 		Timeout: 60 * time.Second,
 	}
-	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
-	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
-	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
-	flag.Parse()
-
-	fmt.Println("save SGF file encoding", saveFileEncoding)
-	fmt.Println("quit if the target file exists", quitIfExists)
 
 	pagelist := []string{
 		"http://weiqi.tom.com/php/listqipu.html",
@@ -223,14 +219,14 @@ func Download(w *sync.WaitGroup) {
 		"http://weiqi.sports.tom.com/php/listqipu2000.html",
 	}
 
-	s := semaphore.NewSemaphore(parallelCount)
+	t.sem = semaphore.NewSemaphore(t.ParallelCount)
 	for _, page := range pagelist {
 		p := page
-		for !quit && downloadPage(p, s) {
-			p = getNextPageURL(p)
+		for !t.quit && t.downloadPage(p) {
+			p = t.getNextPageURL(p)
 		}
 	}
 
 	wg.Wait()
-	fmt.Println("Totally downloaded", downloadCount, " SGF files")
+	fmt.Println("Totally downloaded", t.DownloadCount, " SGF files")
 }
