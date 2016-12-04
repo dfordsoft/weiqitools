@@ -232,8 +232,8 @@ func (w *WeiqiTV) Download(ow *sync.WaitGroup) {
 		Timeout: 120 * time.Second,
 	}
 
-	fmt.Println("the latest pid", w.StartID)
-	fmt.Println("the earliest pid", w.EndID)
+	fmt.Println("weiqitv the latest pid", w.StartID)
+	fmt.Println("weiqitv the earliest pid", w.EndID)
 
 	for i := w.StartID; i <= w.EndID && !w.quit; i += step {
 		res := w.downloadIndex(i)
@@ -244,5 +244,5 @@ func (w *WeiqiTV) Download(ow *sync.WaitGroup) {
 	}
 
 	w.Wait()
-	fmt.Println("Totally downloaded", w.DownloadCount, " SGF files")
+	fmt.Println("Totally downloaded", w.DownloadCount, " SGF files from WeiqiTV")
 }

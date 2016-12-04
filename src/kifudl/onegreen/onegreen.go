@@ -212,5 +212,5 @@ func (o *Onegreen) Download(w *sync.WaitGroup) {
 	}
 
 	o.Wait()
-	fmt.Println("Totally downloaded", o.DownloadCount, " SGF files")
+	fmt.Println("Totally downloaded", o.DownloadCount, " SGF files from onegreen")
 }

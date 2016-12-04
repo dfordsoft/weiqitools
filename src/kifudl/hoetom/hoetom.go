@@ -233,14 +233,14 @@ func (h *Hoetom) Download(w *sync.WaitGroup) {
 	}
 
 	h.getSessionID()
-	fmt.Println("the latest pid", h.LatestPageID)
-	fmt.Println("the earliest pid", h.EarliestPageID)
-	fmt.Println("session id", h.sessionID)
+	fmt.Println("hoetom the latest pid", h.LatestPageID)
+	fmt.Println("hoetom the earliest pid", h.EarliestPageID)
+	fmt.Println("hoetom session id", h.sessionID)
 
 	for i := h.LatestPageID; i <= h.EarliestPageID && !h.quit; i++ {
 		h.downloadPage(i)
 	}
 
 	h.Wait()
-	fmt.Println("Totally downloaded", h.DownloadCount, " SGF files")
+	fmt.Println("Totally downloaded", h.DownloadCount, " SGF files from Hoetom")
 }

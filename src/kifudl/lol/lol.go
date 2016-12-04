@@ -272,10 +272,10 @@ func (l *Lol) Download(w *sync.WaitGroup) {
 
 	l.getCSRF()
 
-	fmt.Println("the latest pid", l.LatestID)
-	fmt.Println("the earliest pid", l.EarliestID)
-	fmt.Println("csrf middleware token", l.csrfmiddlewaretoken)
-	fmt.Println("csrf token", l.csrftoken)
+	fmt.Println("101weiqi the latest pid", l.LatestID)
+	fmt.Println("101weiqi the earliest pid", l.EarliestID)
+	fmt.Println("101weiqi csrf middleware token", l.csrfmiddlewaretoken)
+	fmt.Println("101weiqi csrf token", l.csrftoken)
 
 	for i := l.LatestID; i >= l.EarliestID && !l.quit; i-- {
 		l.Sem.Acquire()
@@ -283,5 +283,5 @@ func (l *Lol) Download(w *sync.WaitGroup) {
 	}
 
 	l.Wait()
-	fmt.Println("Totally downloaded", l.DownloadCount, " SGF files")
+	fmt.Println("Totally downloaded", l.DownloadCount, " SGF files from 101weiqi")
 }

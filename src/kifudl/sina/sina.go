@@ -193,13 +193,13 @@ func (s *Sina) Download(w *sync.WaitGroup) {
 		Timeout: 30 * time.Second,
 	}
 
-	fmt.Println("the latest pid", s.LatestPageID)
-	fmt.Println("the earliest pid", s.EarliestPageID)
+	fmt.Println("sina the latest pid", s.LatestPageID)
+	fmt.Println("sina the earliest pid", s.EarliestPageID)
 
 	for i := s.LatestPageID; i <= s.EarliestPageID && !s.quit; i++ {
 		s.downloadPage(i)
 	}
 
 	s.Wait()
-	fmt.Println("Totally downloaded", s.DownloadCount, " SGF files")
+	fmt.Println("Totally downloaded", s.DownloadCount, " SGF files from Sina")
 }

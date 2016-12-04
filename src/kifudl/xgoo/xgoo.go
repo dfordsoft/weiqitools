@@ -172,13 +172,13 @@ func (x *Xgoo) Download(w *sync.WaitGroup) {
 		Timeout: 30 * time.Second,
 	}
 
-	fmt.Println("the latest pid", x.LatestPageID)
-	fmt.Println("the earliest pid", x.EarliestPageID)
+	fmt.Println("xgoo the latest pid", x.LatestPageID)
+	fmt.Println("xgoo the earliest pid", x.EarliestPageID)
 
 	for i := x.LatestPageID; i <= x.EarliestPageID && !x.quit; i++ {
 		x.downloadPage(i)
 	}
 
 	x.Wait()
-	fmt.Println("Totally downloaded", x.DownloadCount, " SGF files")
+	fmt.Println("Totally downloaded", x.DownloadCount, " SGF files from Xgoo")
 }
