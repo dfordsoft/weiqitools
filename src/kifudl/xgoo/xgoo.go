@@ -1,7 +1,6 @@
 package xgoo
 
 import (
-	"flag"
 	"fmt"
 	"ic"
 	"io/ioutil"
@@ -19,25 +18,29 @@ import (
 )
 
 var (
-	wg               sync.WaitGroup
-	client           *http.Client
-	saveFileEncoding string
-	quit             bool // assume it's false as initial value
-	quitIfExists     bool
-	latestPageID     int
-	earliestPageID   int
-	parallelCount    int
-	downloadCount    int32
+	wg     sync.WaitGroup
+	client *http.Client
 )
 
-func downloadKifu(sgf string, s *semaphore.Semaphore) {
+type Xgoo struct {
+	sem              *semaphore.Semaphore
+	SaveFileEncoding string
+	quit             bool // assume it's false as initial value
+	QuitIfExists     bool
+	LatestPageID     int
+	EarliestPageID   int
+	ParallelCount    int
+	DownloadCount    int32
+}
+
+func (x *Xgoo) downloadKifu(sgf string) {
 	wg.Add(1)
-	s.Acquire()
+	x.sem.Acquire()
 	defer func() {
-		s.Release()
+		x.sem.Release()
 		wg.Done()
 	}()
-	if quit {
+	if x.quit {
 		return
 	}
 	retry := 0
@@ -92,8 +95,8 @@ doRequest:
 	}
 	fullPath := "xgoo/" + u.Path[1:]
 	if util.Exists(fullPath) {
-		if quitIfExists {
-			quit = true
+		if x.QuitIfExists {
+			x.quit = true
 		}
 		return
 	}
@@ -102,19 +105,19 @@ doRequest:
 	if !util.Exists(dir) {
 		os.MkdirAll(dir, 0777)
 	}
-	if saveFileEncoding != "gbk" {
-		kifu = ic.Convert("gbk", saveFileEncoding, kifu)
+	if x.SaveFileEncoding != "gbk" {
+		kifu = ic.Convert("gbk", x.SaveFileEncoding, kifu)
 	}
 	ioutil.WriteFile(fullPath, kifu, 0644)
 	kifu = nil
-	atomic.AddInt32(&downloadCount, 1)
+	atomic.AddInt32(&x.DownloadCount, 1)
 }
 
-func downloadPage(page int, s *semaphore.Semaphore) {
+func (x *Xgoo) downloadPage(page int) {
 	wg.Add(1)
-	s.Acquire()
+	x.sem.Acquire()
 	defer func() {
-		s.Release()
+		x.sem.Release()
 		wg.Done()
 	}()
 	retry := 0
@@ -155,37 +158,29 @@ doPageRequest:
 	regex := regexp.MustCompile(`href=(http:\/\/www\.xgoo\.org\/qipu\/[0-9a-zA-Z\-\_\/]+\.sgf)`)
 	ss := regex.FindAllSubmatch(data, -1)
 	for _, match := range ss {
-		if quit {
+		if x.quit {
 			break
 		}
 		sgf := string(match[1])
-		go downloadKifu(sgf, s)
+		go x.downloadKifu(sgf)
 	}
 }
 
-func Download(w *sync.WaitGroup) {
+func (x *Xgoo) Download(w *sync.WaitGroup) {
 	w.Add(1)
 	defer w.Done()
 	client = &http.Client{
 		Timeout: 30 * time.Second,
 	}
-	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
-	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
-	flag.IntVar(&latestPageID, "l", 1, "the latest page id")
-	flag.IntVar(&earliestPageID, "e", 1968, "the earliest page id")
-	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
-	flag.Parse()
 
-	fmt.Println("save SGF file encoding", saveFileEncoding)
-	fmt.Println("quit if the target file exists", quitIfExists)
-	fmt.Println("the latest pid", latestPageID)
-	fmt.Println("the earliest pid", earliestPageID)
+	fmt.Println("the latest pid", x.LatestPageID)
+	fmt.Println("the earliest pid", x.EarliestPageID)
 
-	s := semaphore.NewSemaphore(parallelCount)
-	for i := latestPageID; i <= earliestPageID && !quit; i++ {
-		downloadPage(i, s)
+	x.sem = semaphore.NewSemaphore(x.ParallelCount)
+	for i := x.LatestPageID; i <= x.EarliestPageID && !x.quit; i++ {
+		x.downloadPage(i)
 	}
 
 	wg.Wait()
-	fmt.Println("Totally downloaded", downloadCount, " SGF files")
+	fmt.Println("Totally downloaded", x.DownloadCount, " SGF files")
 }
