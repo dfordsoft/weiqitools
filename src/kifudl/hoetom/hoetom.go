@@ -221,7 +221,7 @@ doPageRequest:
 	}
 }
 
-func download(w *sync.WaitGroup) {
+func Download(w *sync.WaitGroup) {
 	w.Add(1)
 	defer w.Done()
 	client = &http.Client{
