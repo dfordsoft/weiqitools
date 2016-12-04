@@ -33,7 +33,6 @@ type Lol struct {
 	SaveFileEncoding    string
 	LatestID            int
 	EarliestID          int
-	ParallelCount       int
 	DownloadCount       int32
 }
 
@@ -270,14 +269,11 @@ func (l *Lol) Download(w *sync.WaitGroup) {
 	if l.LatestID == 0 {
 		l.getLatestID()
 	}
-	if l.LatestID-l.EarliestID < l.ParallelCount {
-		l.ParallelCount = l.LatestID - l.EarliestID
-	}
+
 	l.getCSRF()
 
 	fmt.Println("the latest pid", l.LatestID)
 	fmt.Println("the earliest pid", l.EarliestID)
-	fmt.Println("the parallel routines count", l.ParallelCount)
 	fmt.Println("csrf middleware token", l.csrfmiddlewaretoken)
 	fmt.Println("csrf token", l.csrftoken)
 

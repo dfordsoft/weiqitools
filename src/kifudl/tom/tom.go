@@ -29,7 +29,6 @@ type Tom struct {
 	SaveFileEncoding string
 	quit             bool // assume it's false as initial value
 	QuitIfExists     bool
-	ParallelCount    int
 	DownloadCount    int32
 }
 

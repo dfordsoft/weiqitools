@@ -29,7 +29,6 @@ type WeiqiTV struct {
 	QuitIfExists     bool
 	StartID          int
 	EndID            int
-	ParallelCount    int
 	DownloadCount    int32
 }
 

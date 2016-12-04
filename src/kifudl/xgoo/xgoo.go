@@ -29,7 +29,6 @@ type Xgoo struct {
 	QuitIfExists     bool
 	LatestPageID     int
 	EarliestPageID   int
-	ParallelCount    int
 	DownloadCount    int32
 }
 
