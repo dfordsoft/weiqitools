@@ -2,7 +2,6 @@ package weiqitv
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"ic"
 	"io/ioutil"
@@ -19,16 +18,20 @@ import (
 )
 
 var (
-	wg               sync.WaitGroup
-	client           *http.Client
-	saveFileEncoding string
-	quit             bool // assume it's false as initial value
-	quitIfExists     bool
-	startID          int
-	endID            int
-	parallelCount    int
-	downloadCount    int32
+	wg     sync.WaitGroup
+	client *http.Client
 )
+
+type WeiqiTV struct {
+	sem              *semaphore.Semaphore
+	SaveFileEncoding string
+	quit             bool // assume it's false as initial value
+	QuitIfExists     bool
+	StartID          int
+	EndID            int
+	ParallelCount    int
+	DownloadCount    int32
+}
 
 const (
 	step = 10 // weiqitv.com always returns 10 records no matter what value is set
@@ -45,14 +48,14 @@ type KifuInfo struct {
 	Result string `json:"result"`
 }
 
-func downloadKifu(sgf string, s *semaphore.Semaphore) {
+func (w *WeiqiTV) downloadKifu(sgf string) {
 	wg.Add(1)
-	s.Acquire()
+	w.sem.Acquire()
 	defer func() {
-		s.Release()
+		w.sem.Release()
 		wg.Done()
 	}()
-	if quit {
+	if w.quit {
 		return
 	}
 	retry := 0
@@ -102,7 +105,7 @@ doRequest:
 	}
 
 	var kifuInfo KifuInfo
-	if err := json.Unmarshal(kifu, &kifuInfo); err != nil {
+	if err = json.Unmarshal(kifu, &kifuInfo); err != nil {
 		log.Println("cannot unmarshal json", err)
 		retry++
 		if retry < 3 {
@@ -119,8 +122,8 @@ doRequest:
 	fullPath := fmt.Sprintf("weiqitv/%s_%s_%s_%s_vs_%s_%s.sgf",
 		u.Path[1:], kifuInfo.Name, kifuInfo.B, kifuInfo.LB, kifuInfo.W, kifuInfo.LW)
 	if util.Exists(fullPath) {
-		if quitIfExists {
-			quit = true
+		if w.QuitIfExists {
+			w.quit = true
 		}
 		return
 	}
@@ -130,12 +133,12 @@ doRequest:
 		os.MkdirAll(dir, 0777)
 	}
 	kifu = []byte(kifuInfo.SGF)
-	if saveFileEncoding != "gbk" {
-		kifu = ic.Convert("gbk", saveFileEncoding, kifu)
+	if w.SaveFileEncoding != "gbk" {
+		kifu = ic.Convert("gbk", w.SaveFileEncoding, kifu)
 	}
 	ioutil.WriteFile(fullPath, kifu, 0644)
 	kifu = nil
-	atomic.AddInt32(&downloadCount, 1)
+	atomic.AddInt32(&w.DownloadCount, 1)
 }
 
 type Index struct {
@@ -147,14 +150,14 @@ type Indexes struct {
 	Total int     `json:"total"`
 }
 
-func downloadIndex(id int, s *semaphore.Semaphore) (res []string) {
+func (w *WeiqiTV) downloadIndex(id int) (res []string) {
 	wg.Add(1)
-	s.Acquire()
+	w.sem.Acquire()
 	defer func() {
-		s.Release()
+		w.sem.Release()
 		wg.Done()
 	}()
-	if quit {
+	if w.quit {
 		return
 	}
 	retry := 0
@@ -215,7 +218,7 @@ doRequest:
 		return
 	}
 
-	endID = indexes.Total
+	w.EndID = indexes.Total
 	for _, i := range indexes.Data {
 		res = append(res, i.ID)
 	}
@@ -223,33 +226,25 @@ doRequest:
 	return res
 }
 
-func Download(w *sync.WaitGroup) {
-	w.Add(1)
-	defer w.Done()
+func (w *WeiqiTV) Download(ow *sync.WaitGroup) {
+	ow.Add(1)
+	defer ow.Done()
 	client = &http.Client{
 		Timeout: 120 * time.Second,
 	}
-	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
-	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
-	flag.IntVar(&startID, "l", 0, "the start id")
-	flag.IntVar(&endID, "e", 77281, "the end id")
-	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
-	flag.Parse()
 
-	fmt.Println("save SGF file encoding", saveFileEncoding)
-	fmt.Println("quit if the target file exists", quitIfExists)
-	fmt.Println("the latest pid", startID)
-	fmt.Println("the earliest pid", endID)
+	fmt.Println("the latest pid", w.StartID)
+	fmt.Println("the earliest pid", w.EndID)
 
-	s := semaphore.NewSemaphore(parallelCount)
-	for i := startID; i <= endID && !quit; i += step {
-		res := downloadIndex(i, s)
+	w.sem = semaphore.NewSemaphore(w.ParallelCount)
+	for i := w.StartID; i <= w.EndID && !w.quit; i += step {
+		res := w.downloadIndex(i)
 		for _, id := range res {
 			sgf := fmt.Sprintf("http://yi.weiqitv.com/pub/kifureview/%s", id)
-			go downloadKifu(sgf, s)
+			go w.downloadKifu(sgf)
 		}
 	}
 
 	wg.Wait()
-	fmt.Println("Totally downloaded", downloadCount, " SGF files")
+	fmt.Println("Totally downloaded", w.DownloadCount, " SGF files")
 }
