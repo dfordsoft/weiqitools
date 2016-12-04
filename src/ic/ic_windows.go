@@ -1,4 +1,5 @@
 // +build windows
+
 package ic
 
 import "fmt"
@@ -14,7 +15,7 @@ func Convert(from string, to string, src []byte) []byte {
 	}
 
 	if from == "utf-8" {
-		if out, e := FromUTF8(to, src); e != nil {
+		if out, e := FromUTF8(to, src); e == nil {
 			return out
 		} else {
 			fmt.Printf("converting from UTF-8 to %s failed: %v", to, e)
