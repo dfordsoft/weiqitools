@@ -49,13 +49,19 @@ func main() {
 	l.QuitIfExists = quitIfExists
 	l.ParallelCount = parallelCount
 
+	o := &onegreen.Onegreen{
+		SaveFileEncoding: saveFileEncoding,
+		QuitIfExists:     quitIfExists,
+		ParallelCount:    parallelCount,
+	}
+
 	go l.Download(&wg)
 	go h.Download(&wg)
 	go sina.Download(&wg)
 	go tom.Download(&wg)
 	go xgoo.Download(&wg)
 	go weiqitv.Download(&wg)
-	go onegreen.Download(&wg)
+	go o.Download(&wg)
 
 	wg.Wait()
 }

@@ -2,7 +2,6 @@ package onegreen
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
 	"ic"
 	"io/ioutil"
@@ -21,28 +20,31 @@ import (
 )
 
 var (
-	wg               sync.WaitGroup
-	client           *http.Client
-	saveFileEncoding string
-	quit             bool // assume it's false as initial value
-	quitIfExists     bool
-	parallelCount    int
-	downloadCount    int32
+	wg     sync.WaitGroup
+	client *http.Client
 )
+
+type Onegreen struct {
+	SaveFileEncoding string
+	quit             bool // assume it's false as initial value
+	QuitIfExists     bool
+	ParallelCount    int
+	DownloadCount    int32
+}
 
 type Page struct {
 	URL   string
 	Count int
 }
 
-func downloadKifu(sgf string, s *semaphore.Semaphore) {
+func (o *Onegreen) downloadKifu(sgf string, s *semaphore.Semaphore) {
 	wg.Add(1)
 	s.Acquire()
 	defer func() {
 		s.Release()
 		wg.Done()
 	}()
-	if quit {
+	if o.quit {
 		return
 	}
 	retry := 0
@@ -116,8 +118,8 @@ doRequest:
 	fullPathByte = append(fullPathByte[:insertPos], append([]byte{'/'}, fullPathByte[insertPos:]...)...)
 	fullPath = string(fullPathByte)
 	if util.Exists(fullPath) {
-		if quitIfExists {
-			quit = true
+		if o.QuitIfExists {
+			o.quit = true
 		}
 		return
 	}
@@ -127,15 +129,15 @@ doRequest:
 		os.MkdirAll(dir, 0777)
 	}
 
-	if saveFileEncoding != "gbk" {
-		kifu = ic.Convert("gbk", saveFileEncoding, kifu)
+	if o.SaveFileEncoding != "gbk" {
+		kifu = ic.Convert("gbk", o.SaveFileEncoding, kifu)
 	}
 	ioutil.WriteFile(fullPath, kifu, 0644)
 	kifu = nil
-	atomic.AddInt32(&downloadCount, 1)
+	atomic.AddInt32(&o.DownloadCount, 1)
 }
 
-func downloadPage(page string, s *semaphore.Semaphore) {
+func (o *Onegreen) downloadPage(page string, s *semaphore.Semaphore) {
 	wg.Add(1)
 	s.Acquire()
 	defer func() {
@@ -179,44 +181,40 @@ doPageRequest:
 	regex := regexp.MustCompile(`href='(http:\/\/game\.onegreen\.net\/weiqi\/HTML\/[0-9a-zA-Z\-\_]+\.html)'`)
 	ss := regex.FindAllSubmatch(data, -1)
 	for _, match := range ss {
-		if quit {
+		if o.quit {
 			break
 		}
 		sgf := string(match[1])
-		go downloadKifu(sgf, s)
+		go o.downloadKifu(sgf, s)
 	}
 }
 
-func Download(w *sync.WaitGroup) {
+func (o *Onegreen) Download(w *sync.WaitGroup) {
 	w.Add(1)
 	defer w.Done()
 	client = &http.Client{
 		Timeout: 60 * time.Second,
 	}
-	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
-	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
-	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
-	flag.Parse()
 
-	fmt.Println("save SGF file encoding", saveFileEncoding)
-	fmt.Println("quit if the target file exists", quitIfExists)
+	fmt.Println("save SGF file encoding", o.SaveFileEncoding)
+	fmt.Println("quit if the target file exists", o.QuitIfExists)
 
 	pagelist := []Page{
 		{"http://game.onegreen.net/weiqi/ShowClass.asp?ClassID=1218&page=%d", 1254},
 		{"http://game.onegreen.net/weiqi/ShowClass.asp?ClassID=1223&page=%d", 514},
 	}
 
-	s := semaphore.NewSemaphore(parallelCount)
+	s := semaphore.NewSemaphore(o.ParallelCount)
 	for _, page := range pagelist {
-		if quit {
+		if o.quit {
 			break
 		}
-		for i := 1; !quit && i <= page.Count; i++ {
+		for i := 1; !o.quit && i <= page.Count; i++ {
 			u := fmt.Sprintf(page.URL, i)
-			downloadPage(u, s)
+			o.downloadPage(u, s)
 		}
 	}
 
 	wg.Wait()
-	fmt.Println("Totally downloaded", downloadCount, " SGF files")
+	fmt.Println("Totally downloaded", o.DownloadCount, " SGF files")
 }
