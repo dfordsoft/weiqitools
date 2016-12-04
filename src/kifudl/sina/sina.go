@@ -1,18 +1,17 @@
-package main
+package sina
 
 import (
 	"flag"
 	"fmt"
 	"ic"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"regexp"
 	"semaphore"
-	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -25,33 +24,11 @@ var (
 	saveFileEncoding string
 	quit             bool // assume it's false as initial value
 	quitIfExists     bool
+	latestPageID     int
+	earliestPageID   int
 	parallelCount    int
 	downloadCount    int32
 )
-
-func getNextPageURL(page string) string {
-	p := page
-	index := strings.Index(page, "_")
-	if index < 0 {
-		// insert _02 before last .html
-		i := strings.LastIndex(p, ".html")
-		o := []byte(p)
-		o = append(o[:i], append([]byte("_02"), o[i:]...)...)
-		p = string(o)
-	} else {
-		// extract number and increase 1
-		i := strings.LastIndex(p, ".html")
-		n := p[index+1 : i]
-		number, err := strconv.Atoi(n)
-		if err != nil {
-			fmt.Println("converting", n, "to number failed", err)
-			return p
-		}
-		number++
-		p = fmt.Sprintf("%s%2.2d.html", p[:index+1], number)
-	}
-	return p
-}
 
 func downloadKifu(sgf string, s *semaphore.Semaphore) {
 	wg.Add(1)
@@ -71,8 +48,7 @@ func downloadKifu(sgf string, s *semaphore.Semaphore) {
 		return
 	}
 
-	u, _ := url.Parse(sgf)
-	req.Header.Set("Referer", fmt.Sprintf("%s://%s", u.Scheme, u.Host))
+	req.Header.Set("Referer", "http://duiyi.sina.com.cn/gibo/new_gibo.asp?cur_page=689")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
@@ -110,6 +86,10 @@ doRequest:
 		return
 	}
 
+	u, err := url.Parse(sgf)
+	if err != nil {
+		log.Fatal(err)
+	}
 	fullPath := u.Path[1:]
 	if util.Exists(fullPath) {
 		if quitIfExists {
@@ -130,7 +110,7 @@ doRequest:
 	atomic.AddInt32(&downloadCount, 1)
 }
 
-func downloadPage(page string, s *semaphore.Semaphore) bool {
+func downloadPage(page int, s *semaphore.Semaphore) {
 	wg.Add(1)
 	s.Acquire()
 	defer func() {
@@ -138,15 +118,16 @@ func downloadPage(page string, s *semaphore.Semaphore) bool {
 		wg.Done()
 	}()
 	retry := 0
-	req, err := http.NewRequest("GET", page, nil)
+	fullURL := fmt.Sprintf("http://duiyi.sina.com.cn/gibo/new_gibo.asp?cur_page=%d", page)
+	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
 		fmt.Println("Could not parse page request:", err)
-		return false
+		return
 	}
 
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("accept-language", `en-US,en;q=0.8`)
 doPageRequest:
 	resp, err := client.Do(req)
 	if err != nil {
@@ -156,7 +137,7 @@ doPageRequest:
 			time.Sleep(3 * time.Second)
 			goto doPageRequest
 		}
-		return false
+		return
 	}
 
 	defer resp.Body.Close()
@@ -168,64 +149,60 @@ doPageRequest:
 			time.Sleep(3 * time.Second)
 			goto doPageRequest
 		}
-		return false
+		return
 	}
 
-	regex := regexp.MustCompile(`href="([a-zA-Z0-9:\/\-\.]+\.sgf)"`)
+	regex := regexp.MustCompile(`JavaScript:gibo_load\('(http:\/\/duiyi\.sina\.com\.cn\/cgibo\/[0-9]+\/[0-9a-zA-Z\-]+\.sgf)'\)`)
 	ss := regex.FindAllSubmatch(data, -1)
-
-	if len(ss) == 0 {
-		return false
-	}
-
-	u, _ := url.Parse(page)
+	dl := make(map[string]bool, len(ss))
 	for _, match := range ss {
 		if quit {
 			break
 		}
 		sgf := string(match[1])
-		sgf = strings.Replace(sgf, "../..", fmt.Sprintf("%s://%s", u.Scheme, u.Host), 1)
-		sgf = strings.Replace(sgf, "./..", fmt.Sprintf("%s://%s", u.Scheme, u.Host), 1)
-		sgf = strings.Replace(sgf, "..", fmt.Sprintf("%s://%s", u.Scheme, u.Host), 1)
-		sgf = strings.Replace(sgf, "weiqi.cn.tom.com", "weiqi.tom.com", 1)
-		sgf = strings.Replace(sgf, "weiqi.sports.tom.comcom", "weiqi.sports.tom.com", 1)
+		if _, ok := dl[sgf]; ok {
+			continue
+		}
+		dl[sgf] = true
 		go downloadKifu(sgf, s)
 	}
 
-	return true
+	regex = regexp.MustCompile(`JavaScript:gibo_load\('(http:\/\/duiyi\.sina\.com\.cn\/cgibo\/[0-9a-zA-Z\-]+\.sgf)'\)`)
+	ss = regex.FindAllSubmatch(data, -1)
+	dl = make(map[string]bool, len(ss))
+	for _, match := range ss {
+		if quit {
+			break
+		}
+		sgf := string(match[1])
+		if _, ok := dl[sgf]; ok {
+			continue
+		}
+		dl[sgf] = true
+		go downloadKifu(sgf, s)
+	}
+	dl = nil
 }
 
 func main() {
 	client = &http.Client{
-		Timeout: 60 * time.Second,
+		Timeout: 30 * time.Second,
 	}
 	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
 	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
+	flag.IntVar(&latestPageID, "l", 0, "the latest page id")
+	flag.IntVar(&earliestPageID, "e", 689, "the earliest page id")
 	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
 	flag.Parse()
 
 	fmt.Println("save SGF file encoding", saveFileEncoding)
 	fmt.Println("quit if the target file exists", quitIfExists)
-
-	pagelist := []string{
-		"http://weiqi.tom.com/php/listqipu.html",
-		"http://weiqi.sports.tom.com/php/listqipu2012.html",
-		"http://weiqi.sports.tom.com/php/listqipu2011.html",
-		"http://weiqi.sports.tom.com/php/listqipu2010.html",
-		"http://weiqi.sports.tom.com/php/listqipu2009.html",
-		"http://weiqi.sports.tom.com/php/listqipu2008.html",
-		"http://weiqi.sports.tom.com/php/listqipu2007.html",
-		"http://weiqi.sports.tom.com/php/listqipu2006.html",
-		"http://weiqi.sports.tom.com/php/listqipu2005.html",
-		"http://weiqi.sports.tom.com/php/listqipu2000.html",
-	}
+	fmt.Println("the latest pid", latestPageID)
+	fmt.Println("the earliest pid", earliestPageID)
 
 	s := semaphore.NewSemaphore(parallelCount)
-	for _, page := range pagelist {
-		p := page
-		for !quit && downloadPage(p, s) {
-			p = getNextPageURL(p)
-		}
+	for i := latestPageID; i <= earliestPageID && !quit; i++ {
+		downloadPage(i, s)
 	}
 
 	wg.Wait()

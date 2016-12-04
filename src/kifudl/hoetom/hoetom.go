@@ -1,17 +1,16 @@
-package main
+package hoetom
 
 import (
 	"flag"
 	"fmt"
 	"ic"
 	"io/ioutil"
-	"log"
 	"net/http"
-	"net/url"
 	"os"
-	"path"
 	"regexp"
 	"semaphore"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -21,6 +20,10 @@ import (
 var (
 	wg               sync.WaitGroup
 	client           *http.Client
+	sessionID        string
+	userID           string
+	password         string
+	passwordMd5      string
 	saveFileEncoding string
 	quit             bool // assume it's false as initial value
 	quitIfExists     bool
@@ -30,7 +33,44 @@ var (
 	downloadCount    int32
 )
 
-func downloadKifu(sgf string, s *semaphore.Semaphore) {
+func getSessionID() {
+	fullURL := fmt.Sprintf("http://www.hoetom.com/servlet/login")
+	postBody := fmt.Sprintf("userid=%s&passwd=%s&passwdmd5=%s", userID, password, passwordMd5)
+	req, err := http.NewRequest("POST", fullURL, strings.NewReader(postBody))
+	if err != nil {
+		fmt.Println("Could not parse login request:", err)
+		return
+	}
+
+	req.Header.Set("Origin", "http://www.hoetom.com")
+	req.Header.Set("Referer", "http://www.hoetom.com/index.jsp")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+	req.Header.Set("accept-language", `en-US,en;q=0.8`)
+	req.Header.Set("Cache-Control", "max-age=0")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Could not send login request:", err)
+		return
+	}
+
+	defer resp.Body.Close()
+
+	cookies := resp.Cookies()
+	for _, v := range cookies {
+		ss := strings.Split(v.String(), ";")
+		for _, c := range ss {
+			if strings.Index(c, "JSESSIONID") >= 0 {
+				sessionID = strings.Split(c, "=")[1]
+				return
+			}
+		}
+	}
+	fmt.Println("cannot get session id")
+}
+
+func downloadKifu(id int, s *semaphore.Semaphore) {
 	wg.Add(1)
 	s.Acquire()
 	defer func() {
@@ -41,18 +81,20 @@ func downloadKifu(sgf string, s *semaphore.Semaphore) {
 		return
 	}
 	retry := 0
-
-	req, err := http.NewRequest("GET", sgf, nil)
+	fullURL := fmt.Sprintf("http://www.hoetom.com/chessmanual.jsp?id=%d", id)
+	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
 		fmt.Println("Could not parse kifu request:", err)
 		return
 	}
 
-	req.Header.Set("Referer", "http://duiyi.sina.com.cn/gibo/new_gibo.asp?cur_page=689")
+	req.Header.Set("Origin", "http://www.hoetom.com")
+	req.Header.Set("Referer", "http://www.hoetom.com/matchlatest_pro.jsp")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
 	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("cookie", fmt.Sprintf("JSESSIONID=%s; userid=%s", sessionID, userID))
 doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
@@ -67,7 +109,7 @@ doRequest:
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		fmt.Println("kifu request not 200")
+		fmt.Println("kifu request not 200:", resp.StatusCode, fullURL)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -85,22 +127,29 @@ doRequest:
 		}
 		return
 	}
-
-	u, err := url.Parse(sgf)
-	if err != nil {
-		log.Fatal(err)
+	ss := strings.Split(resp.Header.Get("Content-Disposition"), ";")
+	if len(ss) < 2 {
+		fmt.Println("cannot get content-disposition")
+		retry++
+		if retry < 3 {
+			time.Sleep(3 * time.Second)
+			goto doRequest
+		}
+		ss = []string{"", fmt.Sprintf(`"id=%d.sgf"`, id)}
 	}
-	fullPath := u.Path[1:]
+	filename := strings.Split(ss[1], "=")[1]
+	filename = filename[1 : len(filename)-1]
+	filename = ic.ConvertString("gbk", "utf-8", filename)
+	dir := fmt.Sprintf("%d", id/1000)
+	if !util.Exists(dir) {
+		os.MkdirAll(dir, 0777)
+	}
+	fullPath := fmt.Sprintf("%s/%s", dir, filename)
 	if util.Exists(fullPath) {
 		if quitIfExists {
 			quit = true
 		}
 		return
-	}
-
-	dir := path.Dir(fullPath)
-	if !util.Exists(dir) {
-		os.MkdirAll(dir, 0777)
 	}
 	if saveFileEncoding != "gbk" {
 		kifu = ic.Convert("gbk", saveFileEncoding, kifu)
@@ -118,16 +167,20 @@ func downloadPage(page int, s *semaphore.Semaphore) {
 		wg.Done()
 	}()
 	retry := 0
-	fullURL := fmt.Sprintf("http://duiyi.sina.com.cn/gibo/new_gibo.asp?cur_page=%d", page)
+	fullURL := fmt.Sprintf("http://www.hoetom.com/matchlatest_pro.jsp?pn=%d", page)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
 		fmt.Println("Could not parse page request:", err)
 		return
 	}
 
+	req.Header.Set("Origin", "http://www.hoetom.com")
+	req.Header.Set("Referer", "http://www.hoetom.com/matchlatest_pro.jsp")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
+	req.Header.Set("cookie", fmt.Sprintf("JSESSIONID=%s; userid=%s", sessionID, userID))
 doPageRequest:
 	resp, err := client.Do(req)
 	if err != nil {
@@ -152,36 +205,20 @@ doPageRequest:
 		return
 	}
 
-	regex := regexp.MustCompile(`JavaScript:gibo_load\('(http:\/\/duiyi\.sina\.com\.cn\/cgibo\/[0-9]+\/[0-9a-zA-Z\-]+\.sgf)'\)`)
+	regex := regexp.MustCompile(`matchinfor\.jsp\?id=([0-9]+)`)
 	ss := regex.FindAllSubmatch(data, -1)
-	dl := make(map[string]bool, len(ss))
 	for _, match := range ss {
 		if quit {
 			break
 		}
-		sgf := string(match[1])
-		if _, ok := dl[sgf]; ok {
+		id, err := strconv.Atoi(string(match[1]))
+		if err != nil {
+			fmt.Printf("converting %s to number failed", string(match[1]))
 			continue
 		}
-		dl[sgf] = true
-		go downloadKifu(sgf, s)
-	}
 
-	regex = regexp.MustCompile(`JavaScript:gibo_load\('(http:\/\/duiyi\.sina\.com\.cn\/cgibo\/[0-9a-zA-Z\-]+\.sgf)'\)`)
-	ss = regex.FindAllSubmatch(data, -1)
-	dl = make(map[string]bool, len(ss))
-	for _, match := range ss {
-		if quit {
-			break
-		}
-		sgf := string(match[1])
-		if _, ok := dl[sgf]; ok {
-			continue
-		}
-		dl[sgf] = true
-		go downloadKifu(sgf, s)
+		go downloadKifu(id, s)
 	}
-	dl = nil
 }
 
 func main() {
@@ -190,16 +227,18 @@ func main() {
 	}
 	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
 	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
-	flag.IntVar(&latestPageID, "l", 0, "the latest page id")
-	flag.IntVar(&earliestPageID, "e", 689, "the earliest page id")
+	flag.IntVar(&latestPageID, "l", 1, "the latest page id")
+	flag.IntVar(&earliestPageID, "e", 1045, "the earliest page id")
 	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
 	flag.Parse()
 
+	getSessionID()
 	fmt.Println("save SGF file encoding", saveFileEncoding)
 	fmt.Println("quit if the target file exists", quitIfExists)
 	fmt.Println("the latest pid", latestPageID)
 	fmt.Println("the earliest pid", earliestPageID)
-
+	fmt.Println("the parallel routines count", parallelCount)
+	fmt.Println("session id", sessionID)
 	s := semaphore.NewSemaphore(parallelCount)
 	for i := latestPageID; i <= earliestPageID && !quit; i++ {
 		downloadPage(i, s)

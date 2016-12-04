@@ -1,18 +1,17 @@
-package main
+package tom
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"ic"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"path"
 	"regexp"
 	"semaphore"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -30,9 +29,28 @@ var (
 	downloadCount    int32
 )
 
-type Page struct {
-	URL   string
-	Count int
+func getNextPageURL(page string) string {
+	p := page
+	index := strings.Index(page, "_")
+	if index < 0 {
+		// insert _02 before last .html
+		i := strings.LastIndex(p, ".html")
+		o := []byte(p)
+		o = append(o[:i], append([]byte("_02"), o[i:]...)...)
+		p = string(o)
+	} else {
+		// extract number and increase 1
+		i := strings.LastIndex(p, ".html")
+		n := p[index+1 : i]
+		number, err := strconv.Atoi(n)
+		if err != nil {
+			fmt.Println("converting", n, "to number failed", err)
+			return p
+		}
+		number++
+		p = fmt.Sprintf("%s%2.2d.html", p[:index+1], number)
+	}
+	return p
 }
 
 func downloadKifu(sgf string, s *semaphore.Semaphore) {
@@ -53,7 +71,8 @@ func downloadKifu(sgf string, s *semaphore.Semaphore) {
 		return
 	}
 
-	req.Header.Set("Referer", "http://game.onegreen.net/weiqi/ShowClass.asp?ClassID=1218&page=1254")
+	u, _ := url.Parse(sgf)
+	req.Header.Set("Referer", fmt.Sprintf("%s://%s", u.Scheme, u.Host))
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
@@ -91,30 +110,7 @@ doRequest:
 		return
 	}
 
-	// extract SGF data
-	index := bytes.Index(kifu, []byte(`sgftext=`))
-	if index < 0 {
-		fmt.Println("cannot find start keyword")
-		return
-	}
-	kifu = kifu[index+8:]
-	index = bytes.Index(kifu, []byte(`" ALLOWSCRIPTACCESS=`))
-	if index < 0 {
-		fmt.Println("cannot find end keyword")
-		return
-	}
-	kifu = kifu[:index]
-
-	u, err := url.Parse(sgf)
-	if err != nil {
-		log.Fatal(err)
-	}
 	fullPath := u.Path[1:]
-	fullPath = strings.Replace(fullPath, ".html", ".sgf", -1)
-	insertPos := len(fullPath) - 7
-	fullPathByte := []byte(fullPath)
-	fullPathByte = append(fullPathByte[:insertPos], append([]byte{'/'}, fullPathByte[insertPos:]...)...)
-	fullPath = string(fullPathByte)
 	if util.Exists(fullPath) {
 		if quitIfExists {
 			quit = true
@@ -126,7 +122,6 @@ doRequest:
 	if !util.Exists(dir) {
 		os.MkdirAll(dir, 0777)
 	}
-
 	if saveFileEncoding != "gbk" {
 		kifu = ic.Convert("gbk", saveFileEncoding, kifu)
 	}
@@ -135,7 +130,7 @@ doRequest:
 	atomic.AddInt32(&downloadCount, 1)
 }
 
-func downloadPage(page string, s *semaphore.Semaphore) {
+func downloadPage(page string, s *semaphore.Semaphore) bool {
 	wg.Add(1)
 	s.Acquire()
 	defer func() {
@@ -146,12 +141,12 @@ func downloadPage(page string, s *semaphore.Semaphore) {
 	req, err := http.NewRequest("GET", page, nil)
 	if err != nil {
 		fmt.Println("Could not parse page request:", err)
-		return
+		return false
 	}
 
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-	req.Header.Set("accept-language", `en-US,en;q=0.8`)
+	req.Header.Set("Upgrade-Insecure-Requests", "1")
 doPageRequest:
 	resp, err := client.Do(req)
 	if err != nil {
@@ -161,7 +156,7 @@ doPageRequest:
 			time.Sleep(3 * time.Second)
 			goto doPageRequest
 		}
-		return
+		return false
 	}
 
 	defer resp.Body.Close()
@@ -173,18 +168,31 @@ doPageRequest:
 			time.Sleep(3 * time.Second)
 			goto doPageRequest
 		}
-		return
+		return false
 	}
 
-	regex := regexp.MustCompile(`href='(http:\/\/game\.onegreen\.net\/weiqi\/HTML\/[0-9a-zA-Z\-\_]+\.html)'`)
+	regex := regexp.MustCompile(`href="([a-zA-Z0-9:\/\-\.]+\.sgf)"`)
 	ss := regex.FindAllSubmatch(data, -1)
+
+	if len(ss) == 0 {
+		return false
+	}
+
+	u, _ := url.Parse(page)
 	for _, match := range ss {
 		if quit {
 			break
 		}
 		sgf := string(match[1])
+		sgf = strings.Replace(sgf, "../..", fmt.Sprintf("%s://%s", u.Scheme, u.Host), 1)
+		sgf = strings.Replace(sgf, "./..", fmt.Sprintf("%s://%s", u.Scheme, u.Host), 1)
+		sgf = strings.Replace(sgf, "..", fmt.Sprintf("%s://%s", u.Scheme, u.Host), 1)
+		sgf = strings.Replace(sgf, "weiqi.cn.tom.com", "weiqi.tom.com", 1)
+		sgf = strings.Replace(sgf, "weiqi.sports.tom.comcom", "weiqi.sports.tom.com", 1)
 		go downloadKifu(sgf, s)
 	}
+
+	return true
 }
 
 func main() {
@@ -199,19 +207,24 @@ func main() {
 	fmt.Println("save SGF file encoding", saveFileEncoding)
 	fmt.Println("quit if the target file exists", quitIfExists)
 
-	pagelist := []Page{
-		{"http://game.onegreen.net/weiqi/ShowClass.asp?ClassID=1218&page=%d", 1254},
-		{"http://game.onegreen.net/weiqi/ShowClass.asp?ClassID=1223&page=%d", 514},
+	pagelist := []string{
+		"http://weiqi.tom.com/php/listqipu.html",
+		"http://weiqi.sports.tom.com/php/listqipu2012.html",
+		"http://weiqi.sports.tom.com/php/listqipu2011.html",
+		"http://weiqi.sports.tom.com/php/listqipu2010.html",
+		"http://weiqi.sports.tom.com/php/listqipu2009.html",
+		"http://weiqi.sports.tom.com/php/listqipu2008.html",
+		"http://weiqi.sports.tom.com/php/listqipu2007.html",
+		"http://weiqi.sports.tom.com/php/listqipu2006.html",
+		"http://weiqi.sports.tom.com/php/listqipu2005.html",
+		"http://weiqi.sports.tom.com/php/listqipu2000.html",
 	}
 
 	s := semaphore.NewSemaphore(parallelCount)
 	for _, page := range pagelist {
-		if quit {
-			break
-		}
-		for i := 1; !quit && i <= page.Count; i++ {
-			u := fmt.Sprintf(page.URL, i)
-			downloadPage(u, s)
+		p := page
+		for !quit && downloadPage(p, s) {
+			p = getNextPageURL(p)
 		}
 	}
 
