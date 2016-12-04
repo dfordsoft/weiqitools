@@ -226,5 +226,5 @@ func (t *Tom) Download(w *sync.WaitGroup) {
 	}
 
 	t.Wait()
-	fmt.Println("Totally downloaded", t.DownloadCount, " SGF files from Tom")
+	fmt.Println("downloaded", t.DownloadCount, " SGF files from Tom")
 }

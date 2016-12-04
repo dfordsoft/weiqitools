@@ -244,5 +244,5 @@ func (w *WeiqiTV) Download(ow *sync.WaitGroup) {
 	}
 
 	w.Wait()
-	fmt.Println("Totally downloaded", w.DownloadCount, " SGF files from WeiqiTV")
+	fmt.Println("downloaded", w.DownloadCount, " SGF files from WeiqiTV")
 }

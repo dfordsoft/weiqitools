@@ -242,5 +242,5 @@ func (h *Hoetom) Download(w *sync.WaitGroup) {
 	}
 
 	h.Wait()
-	fmt.Println("Totally downloaded", h.DownloadCount, " SGF files from Hoetom")
+	fmt.Println("downloaded", h.DownloadCount, " SGF files from Hoetom")
 }

@@ -180,5 +180,5 @@ func (x *Xgoo) Download(w *sync.WaitGroup) {
 	}
 
 	x.Wait()
-	fmt.Println("Totally downloaded", x.DownloadCount, " SGF files from Xgoo")
+	fmt.Println("downloaded", x.DownloadCount, " SGF files from Xgoo")
 }
