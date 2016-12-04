@@ -5,6 +5,7 @@ import (
 	"kifudl/hoetom"
 	"kifudl/lol"
 	"kifudl/onegreen"
+	"kifudl/semaphore"
 	"kifudl/sina"
 	"kifudl/tom"
 	"kifudl/weiqitv"
@@ -55,33 +56,34 @@ func main() {
 
 	h.SaveFileEncoding = saveFileEncoding
 	h.QuitIfExists = quitIfExists
-	h.ParallelCount = parallelCount
+	h.Sem = semaphore.NewSemaphore(parallelCount)
 
 	l.SaveFileEncoding = saveFileEncoding
 	l.QuitIfExists = quitIfExists
-	l.ParallelCount = parallelCount
+	l.Sem = semaphore.NewSemaphore(parallelCount)
 
 	s.SaveFileEncoding = saveFileEncoding
 	s.QuitIfExists = quitIfExists
-	s.ParallelCount = parallelCount
+	s.Sem = semaphore.NewSemaphore(parallelCount)
 
 	x.SaveFileEncoding = saveFileEncoding
 	x.QuitIfExists = quitIfExists
-	x.ParallelCount = parallelCount
+	x.Sem = semaphore.NewSemaphore(parallelCount)
 
 	w.SaveFileEncoding = saveFileEncoding
 	w.QuitIfExists = quitIfExists
-	w.ParallelCount = parallelCount
+	w.Sem = semaphore.NewSemaphore(parallelCount)
+
 	o := &onegreen.Onegreen{
+		Sem:              semaphore.NewSemaphore(parallelCount),
 		SaveFileEncoding: saveFileEncoding,
 		QuitIfExists:     quitIfExists,
-		ParallelCount:    parallelCount,
 	}
 
 	t := &tom.Tom{
+		Sem:              semaphore.NewSemaphore(parallelCount),
 		SaveFileEncoding: saveFileEncoding,
 		QuitIfExists:     quitIfExists,
-		ParallelCount:    parallelCount,
 	}
 
 	go l.Download(&wg)
@@ -93,4 +95,7 @@ func main() {
 	go o.Download(&wg)
 
 	wg.Wait()
+	fmt.Println("total downloaded ",
+		l.DownloadCount+h.DownloadCount+s.DownloadCount+t.DownloadCount+x.DownloadCount+w.DownloadCount+o.DownloadCount,
+		" SGFs")
 }

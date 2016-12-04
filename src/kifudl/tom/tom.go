@@ -20,12 +20,12 @@ import (
 )
 
 var (
-	wg     sync.WaitGroup
 	client *http.Client
 )
 
 type Tom struct {
-	sem              *semaphore.Semaphore
+	sync.WaitGroup
+	Sem              *semaphore.Semaphore
 	SaveFileEncoding string
 	quit             bool // assume it's false as initial value
 	QuitIfExists     bool
@@ -58,11 +58,11 @@ func (t *Tom) getNextPageURL(page string) string {
 }
 
 func (t *Tom) downloadKifu(sgf string) {
-	wg.Add(1)
-	t.sem.Acquire()
+	t.Add(1)
+	t.Sem.Acquire()
 	defer func() {
-		t.sem.Release()
-		wg.Done()
+		t.Sem.Release()
+		t.Done()
 	}()
 	if t.quit {
 		return
@@ -135,11 +135,11 @@ doRequest:
 }
 
 func (t *Tom) downloadPage(page string) bool {
-	wg.Add(1)
-	t.sem.Acquire()
+	t.Add(1)
+	t.Sem.Acquire()
 	defer func() {
-		t.sem.Release()
-		wg.Done()
+		t.Sem.Release()
+		t.Done()
 	}()
 	retry := 0
 	req, err := http.NewRequest("GET", page, nil)
@@ -219,7 +219,7 @@ func (t *Tom) Download(w *sync.WaitGroup) {
 		"http://weiqi.sports.tom.com/php/listqipu2000.html",
 	}
 
-	t.sem = semaphore.NewSemaphore(t.ParallelCount)
+	t.Sem = semaphore.NewSemaphore(t.ParallelCount)
 	for _, page := range pagelist {
 		p := page
 		for !t.quit && t.downloadPage(p) {
@@ -227,6 +227,6 @@ func (t *Tom) Download(w *sync.WaitGroup) {
 		}
 	}
 
-	wg.Wait()
+	t.Wait()
 	fmt.Println("Totally downloaded", t.DownloadCount, " SGF files")
 }

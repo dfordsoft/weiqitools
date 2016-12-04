@@ -18,12 +18,12 @@ import (
 )
 
 var (
-	wg     sync.WaitGroup
 	client *http.Client
 )
 
 type WeiqiTV struct {
-	sem              *semaphore.Semaphore
+	sync.WaitGroup
+	Sem              *semaphore.Semaphore
 	SaveFileEncoding string
 	quit             bool // assume it's false as initial value
 	QuitIfExists     bool
@@ -49,11 +49,11 @@ type KifuInfo struct {
 }
 
 func (w *WeiqiTV) downloadKifu(sgf string) {
-	wg.Add(1)
-	w.sem.Acquire()
+	w.Add(1)
+	w.Sem.Acquire()
 	defer func() {
-		w.sem.Release()
-		wg.Done()
+		w.Sem.Release()
+		w.Done()
 	}()
 	if w.quit {
 		return
@@ -151,11 +151,11 @@ type Indexes struct {
 }
 
 func (w *WeiqiTV) downloadIndex(id int) (res []string) {
-	wg.Add(1)
-	w.sem.Acquire()
+	w.Add(1)
+	w.Sem.Acquire()
 	defer func() {
-		w.sem.Release()
-		wg.Done()
+		w.Sem.Release()
+		w.Done()
 	}()
 	if w.quit {
 		return
@@ -236,7 +236,7 @@ func (w *WeiqiTV) Download(ow *sync.WaitGroup) {
 	fmt.Println("the latest pid", w.StartID)
 	fmt.Println("the earliest pid", w.EndID)
 
-	w.sem = semaphore.NewSemaphore(w.ParallelCount)
+	w.Sem = semaphore.NewSemaphore(w.ParallelCount)
 	for i := w.StartID; i <= w.EndID && !w.quit; i += step {
 		res := w.downloadIndex(i)
 		for _, id := range res {
@@ -245,6 +245,6 @@ func (w *WeiqiTV) Download(ow *sync.WaitGroup) {
 		}
 	}
 
-	wg.Wait()
+	w.Wait()
 	fmt.Println("Totally downloaded", w.DownloadCount, " SGF files")
 }

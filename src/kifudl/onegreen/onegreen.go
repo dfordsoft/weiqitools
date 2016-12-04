@@ -20,16 +20,15 @@ import (
 )
 
 var (
-	wg     sync.WaitGroup
 	client *http.Client
 )
 
 type Onegreen struct {
-	sem              *semaphore.Semaphore
+	sync.WaitGroup
+	Sem              *semaphore.Semaphore
 	SaveFileEncoding string
 	quit             bool // assume it's false as initial value
 	QuitIfExists     bool
-	ParallelCount    int
 	DownloadCount    int32
 }
 
@@ -39,11 +38,11 @@ type Page struct {
 }
 
 func (o *Onegreen) downloadKifu(sgf string) {
-	wg.Add(1)
-	o.sem.Acquire()
+	o.Add(1)
+	o.Sem.Acquire()
 	defer func() {
-		o.sem.Release()
-		wg.Done()
+		o.Sem.Release()
+		o.Done()
 	}()
 	if o.quit {
 		return
@@ -139,11 +138,11 @@ doRequest:
 }
 
 func (o *Onegreen) downloadPage(page string) {
-	wg.Add(1)
-	o.sem.Acquire()
+	o.Add(1)
+	o.Sem.Acquire()
 	defer func() {
-		o.sem.Release()
-		wg.Done()
+		o.Sem.Release()
+		o.Done()
 	}()
 	retry := 0
 	req, err := http.NewRequest("GET", page, nil)
@@ -205,7 +204,6 @@ func (o *Onegreen) Download(w *sync.WaitGroup) {
 		{"http://game.onegreen.net/weiqi/ShowClass.asp?ClassID=1223&page=%d", 514},
 	}
 
-	o.sem = semaphore.NewSemaphore(o.ParallelCount)
 	for _, page := range pagelist {
 		if o.quit {
 			break
@@ -216,6 +214,6 @@ func (o *Onegreen) Download(w *sync.WaitGroup) {
 		}
 	}
 
-	wg.Wait()
+	o.Wait()
 	fmt.Println("Totally downloaded", o.DownloadCount, " SGF files")
 }

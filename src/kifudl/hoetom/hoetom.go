@@ -23,7 +23,8 @@ var (
 )
 
 type Hoetom struct {
-	sem              *semaphore.Semaphore
+	sync.WaitGroup
+	Sem              *semaphore.Semaphore
 	sessionID        string
 	userID           string
 	password         string
@@ -75,11 +76,11 @@ func (h *Hoetom) getSessionID() {
 }
 
 func (h *Hoetom) downloadKifu(id int) {
-	wg.Add(1)
-	h.sem.Acquire()
+	h.Add(1)
+	h.Sem.Acquire()
 	defer func() {
-		h.sem.Release()
-		wg.Done()
+		h.Sem.Release()
+		h.Done()
 	}()
 	if h.quit {
 		return
@@ -164,11 +165,11 @@ doRequest:
 }
 
 func (h *Hoetom) downloadPage(page int) {
-	wg.Add(1)
-	h.sem.Acquire()
+	h.Add(1)
+	h.Sem.Acquire()
 	defer func() {
-		h.sem.Release()
-		wg.Done()
+		h.Sem.Release()
+		h.Done()
 	}()
 	retry := 0
 	fullURL := fmt.Sprintf("http://www.hoetom.com/matchlatest_pro.jsp?pn=%d", page)
@@ -239,11 +240,11 @@ func (h *Hoetom) Download(w *sync.WaitGroup) {
 	fmt.Println("the earliest pid", h.EarliestPageID)
 	fmt.Println("the parallel routines count", h.ParallelCount)
 	fmt.Println("session id", h.sessionID)
-	h.sem = semaphore.NewSemaphore(h.ParallelCount)
+	h.Sem = semaphore.NewSemaphore(h.ParallelCount)
 	for i := h.LatestPageID; i <= h.EarliestPageID && !h.quit; i++ {
 		h.downloadPage(i)
 	}
 
-	wg.Wait()
+	h.Wait()
 	fmt.Println("Totally downloaded", h.DownloadCount, " SGF files")
 }

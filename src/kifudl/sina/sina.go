@@ -18,12 +18,12 @@ import (
 )
 
 var (
-	wg     sync.WaitGroup
 	client *http.Client
 )
 
 type Sina struct {
-	sem              *semaphore.Semaphore
+	sync.WaitGroup
+	Sem              *semaphore.Semaphore
 	SaveFileEncoding string
 	quit             bool // assume it's false as initial value
 	QuitIfExists     bool
@@ -34,11 +34,11 @@ type Sina struct {
 }
 
 func (s *Sina) downloadKifu(sgf string) {
-	wg.Add(1)
-	s.sem.Acquire()
+	s.Add(1)
+	s.Sem.Acquire()
 	defer func() {
-		s.sem.Release()
-		wg.Done()
+		s.Sem.Release()
+		s.Done()
 	}()
 	if s.quit {
 		return
@@ -114,11 +114,11 @@ doRequest:
 }
 
 func (s *Sina) downloadPage(page int) {
-	wg.Add(1)
-	s.sem.Acquire()
+	s.Add(1)
+	s.Sem.Acquire()
 	defer func() {
-		s.sem.Release()
-		wg.Done()
+		s.Sem.Release()
+		s.Done()
 	}()
 	retry := 0
 	fullURL := fmt.Sprintf("http://duiyi.sina.com.cn/gibo/new_gibo.asp?cur_page=%d", page)
@@ -199,11 +199,11 @@ func (s *Sina) Download(w *sync.WaitGroup) {
 	fmt.Println("the latest pid", s.LatestPageID)
 	fmt.Println("the earliest pid", s.EarliestPageID)
 
-	s.sem = semaphore.NewSemaphore(s.ParallelCount)
+	s.Sem = semaphore.NewSemaphore(s.ParallelCount)
 	for i := s.LatestPageID; i <= s.EarliestPageID && !s.quit; i++ {
 		s.downloadPage(i)
 	}
 
-	wg.Wait()
+	s.Wait()
 	fmt.Println("Totally downloaded", s.DownloadCount, " SGF files")
 }

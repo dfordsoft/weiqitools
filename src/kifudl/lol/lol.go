@@ -20,12 +20,12 @@ import (
 )
 
 var (
-	wg     sync.WaitGroup
 	client *http.Client
 )
 
 type Lol struct {
-	sem                 *semaphore.Semaphore
+	sync.WaitGroup
+	Sem                 *semaphore.Semaphore
 	csrfmiddlewaretoken string
 	csrftoken           string
 	quit                bool // assume it's false as initial value
@@ -116,10 +116,10 @@ func (l *Lol) getPath(index int) string {
 }
 
 func (l *Lol) download(index int) {
-	wg.Add(1)
+	l.Add(1)
 	defer func() {
-		l.sem.Release()
-		wg.Done()
+		l.Sem.Release()
+		l.Done()
 	}()
 	tryGettingPath := 1
 startGettingPath:
@@ -274,19 +274,18 @@ func (l *Lol) Download(w *sync.WaitGroup) {
 		l.ParallelCount = l.LatestID - l.EarliestID
 	}
 	l.getCSRF()
-	fmt.Println("save SGF file encoding", l.SaveFileEncoding)
-	fmt.Println("quit if the target file exists", l.QuitIfExists)
+
 	fmt.Println("the latest pid", l.LatestID)
 	fmt.Println("the earliest pid", l.EarliestID)
 	fmt.Println("the parallel routines count", l.ParallelCount)
 	fmt.Println("csrf middleware token", l.csrfmiddlewaretoken)
 	fmt.Println("csrf token", l.csrftoken)
-	l.sem = semaphore.NewSemaphore(l.ParallelCount)
+
 	for i := l.LatestID; i >= l.EarliestID && !l.quit; i-- {
-		l.sem.Acquire()
+		l.Sem.Acquire()
 		go l.download(i)
 	}
 
-	wg.Wait()
+	l.Wait()
 	fmt.Println("Totally downloaded", l.DownloadCount, " SGF files")
 }

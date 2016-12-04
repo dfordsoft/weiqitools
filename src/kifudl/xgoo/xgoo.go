@@ -18,12 +18,12 @@ import (
 )
 
 var (
-	wg     sync.WaitGroup
 	client *http.Client
 )
 
 type Xgoo struct {
-	sem              *semaphore.Semaphore
+	sync.WaitGroup
+	Sem              *semaphore.Semaphore
 	SaveFileEncoding string
 	quit             bool // assume it's false as initial value
 	QuitIfExists     bool
@@ -34,11 +34,11 @@ type Xgoo struct {
 }
 
 func (x *Xgoo) downloadKifu(sgf string) {
-	wg.Add(1)
-	x.sem.Acquire()
+	x.Add(1)
+	x.Sem.Acquire()
 	defer func() {
-		x.sem.Release()
-		wg.Done()
+		x.Sem.Release()
+		x.Done()
 	}()
 	if x.quit {
 		return
@@ -114,11 +114,11 @@ doRequest:
 }
 
 func (x *Xgoo) downloadPage(page int) {
-	wg.Add(1)
-	x.sem.Acquire()
+	x.Add(1)
+	x.Sem.Acquire()
 	defer func() {
-		x.sem.Release()
-		wg.Done()
+		x.Sem.Release()
+		x.Done()
 	}()
 	retry := 0
 	fullURL := fmt.Sprintf("http://qipu.xgoo.org/index.php?page=%d", page)
@@ -176,11 +176,11 @@ func (x *Xgoo) Download(w *sync.WaitGroup) {
 	fmt.Println("the latest pid", x.LatestPageID)
 	fmt.Println("the earliest pid", x.EarliestPageID)
 
-	x.sem = semaphore.NewSemaphore(x.ParallelCount)
+	x.Sem = semaphore.NewSemaphore(x.ParallelCount)
 	for i := x.LatestPageID; i <= x.EarliestPageID && !x.quit; i++ {
 		x.downloadPage(i)
 	}
 
-	wg.Wait()
+	x.Wait()
 	fmt.Println("Totally downloaded", x.DownloadCount, " SGF files")
 }
