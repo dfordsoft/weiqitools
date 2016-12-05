@@ -59,6 +59,7 @@ func main() {
 
 	var wg sync.WaitGroup
 
+	var h *hoetom.Hoetom
 	if hoetomEnabled {
 		h := &hoetom.Hoetom{
 			Semaphore:        *semaphore.NewSemaphore(parallelCount),
@@ -71,6 +72,7 @@ func main() {
 		go h.Download(&wg)
 	}
 
+	var l *lol.Lol
 	if lolEnabled {
 		l := &lol.Lol{
 			Semaphore:        *semaphore.NewSemaphore(parallelCount),
@@ -83,6 +85,7 @@ func main() {
 		go l.Download(&wg)
 	}
 
+	var s *sina.Sina
 	if sinaEnabled {
 		s := &sina.Sina{
 			Semaphore:        *semaphore.NewSemaphore(parallelCount),
@@ -95,6 +98,7 @@ func main() {
 		go s.Download(&wg)
 	}
 
+	var x *xgoo.Xgoo
 	if xgooEnabled {
 		x := &xgoo.Xgoo{
 			Semaphore:        *semaphore.NewSemaphore(parallelCount),
@@ -107,6 +111,7 @@ func main() {
 		go x.Download(&wg)
 	}
 
+	var w *weiqitv.WeiqiTV
 	if weiqitvEnabled {
 		w := &weiqitv.WeiqiTV{
 			Semaphore:        *semaphore.NewSemaphore(parallelCount),
@@ -119,8 +124,9 @@ func main() {
 		go w.Download(&wg)
 	}
 
+	var o *onegreen.Onegreen
 	if onegreenEnabled {
-		o := &onegreen.Onegreen{
+		o = &onegreen.Onegreen{
 			Semaphore:        *semaphore.NewSemaphore(parallelCount),
 			SaveFileEncoding: saveFileEncoding,
 			QuitIfExists:     quitIfExists,
@@ -129,8 +135,9 @@ func main() {
 		go o.Download(&wg)
 	}
 
+	var t *tom.Tom
 	if tomEnabled {
-		t := &tom.Tom{
+		t = &tom.Tom{
 			Semaphore:        *semaphore.NewSemaphore(parallelCount),
 			SaveFileEncoding: saveFileEncoding,
 			QuitIfExists:     quitIfExists,
@@ -140,7 +147,27 @@ func main() {
 	}
 	wg.Wait()
 
-	fmt.Println("total downloaded ",
-		//l.DownloadCount+h.DownloadCount+s.DownloadCount+t.DownloadCount+x.DownloadCount+w.DownloadCount+o.DownloadCount,
-		" SGFs")
+	var downloadCount int32
+	if lolEnabled {
+		downloadCount += l.DownloadCount
+	}
+	if sinaEnabled {
+		downloadCount += s.DownloadCount
+	}
+	if tomEnabled {
+		downloadCount += t.DownloadCount
+	}
+	if xgooEnabled {
+		downloadCount += x.DownloadCount
+	}
+	if onegreenEnabled {
+		downloadCount += o.DownloadCount
+	}
+	if weiqitvEnabled {
+		downloadCount += w.DownloadCount
+	}
+	if hoetomEnabled {
+		downloadCount += h.DownloadCount
+	}
+	fmt.Println("total downloaded ", downloadCount, " SGFs")
 }
