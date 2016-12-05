@@ -102,6 +102,7 @@ func main() {
 	}
 
 	var wg sync.WaitGroup
+	wg.Add(7)
 	go l.Download(&wg)
 	go h.Download(&wg)
 	go s.Download(&wg)

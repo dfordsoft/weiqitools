@@ -226,7 +226,6 @@ doRequest:
 }
 
 func (w *WeiqiTV) Download(ow *sync.WaitGroup) {
-	ow.Add(1)
 	defer ow.Done()
 	client = &http.Client{
 		Timeout: 120 * time.Second,

@@ -166,7 +166,6 @@ doPageRequest:
 }
 
 func (x *Xgoo) Download(w *sync.WaitGroup) {
-	w.Add(1)
 	defer w.Done()
 	client = &http.Client{
 		Timeout: 30 * time.Second,
