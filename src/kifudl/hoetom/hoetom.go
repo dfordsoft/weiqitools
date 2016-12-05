@@ -144,11 +144,11 @@ doRequest:
 	filename := strings.Split(ss[1], "=")[1]
 	filename = filename[1 : len(filename)-1]
 	filename = ic.ConvertString("gbk", "utf-8", filename)
-	dir := fmt.Sprintf("%d", id/1000)
+	dir := fmt.Sprintf("hoetom/%d", id/1000)
 	if !util.Exists(dir) {
 		os.MkdirAll(dir, 0777)
 	}
-	fullPath := fmt.Sprintf("hoetom/%s/%s", dir, filename)
+	fullPath := fmt.Sprintf("%s/%s", dir, filename)
 	if util.Exists(fullPath) {
 		if h.QuitIfExists {
 			h.quit = true
