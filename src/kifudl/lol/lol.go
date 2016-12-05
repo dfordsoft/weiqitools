@@ -140,7 +140,7 @@ startGettingPath:
 			kifu := l.getContent(p)
 			if len(kifu) > 0 {
 				if bytes.Index(kifu, []byte("EV[]")) > 0 {
-					log.Println("empty ev node for", fullPath)
+					//log.Println("empty ev node for", fullPath)
 					return
 				}
 				dir, _ := filepath.Split(fullPath)
