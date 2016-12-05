@@ -19,9 +19,17 @@ func main() {
 	var quitIfExists bool
 	var saveFileEncoding string
 	var parallelCount int
+	var lolEnabled, xgooEnabled, sinaEnabled, tomEnabled, onegreenEnabled, hoetomEnabled, weiqitvEnabled bool
 	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
 	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
 	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
+	flag.BoolVar(&lolEnabled, "lol-enabled", true, "fetch kifu from lol")
+	flag.BoolVar(&xgooEnabled, "xgoo-enabled", true, "fetch kifu from xgoo")
+	flag.BoolVar(&sinaEnabled, "sina-enabled", true, "fetch kifu from sina")
+	flag.BoolVar(&tomEnabled, "tom-enabled", true, "fetch kifu from tom")
+	flag.BoolVar(&onegreenEnabled, "onegreen-enabled", true, "fetch kifu from onegreen")
+	flag.BoolVar(&hoetomEnabled, "hoetom-enabled", true, "fetch kifu from hoetom")
+	flag.BoolVar(&weiqitvEnabled, "weiqitv-enabled", true, "fetch kifu from weiqitv")
 
 	var hoetomLatestPageID, hoetomEarliestPageID int
 	flag.IntVar(&hoetomLatestPageID, "hoetom-latest-page-id", 1, "the latest page id of hoetom")
@@ -49,70 +57,90 @@ func main() {
 	fmt.Println("quit if the target file exists", quitIfExists)
 	fmt.Println("the parallel routines count", parallelCount)
 
-	h := &hoetom.Hoetom{
-		Semaphore:        *semaphore.NewSemaphore(parallelCount),
-		SaveFileEncoding: saveFileEncoding,
-		QuitIfExists:     quitIfExists,
-		LatestPageID:     hoetomLatestPageID,
-		EarliestPageID:   hoetomEarliestPageID,
-	}
-
-	l := &lol.Lol{
-		Semaphore:        *semaphore.NewSemaphore(parallelCount),
-		SaveFileEncoding: saveFileEncoding,
-		QuitIfExists:     quitIfExists,
-		LatestID:         lolLatestID,
-		EarliestID:       lolEarliestID,
-	}
-
-	s := &sina.Sina{
-		Semaphore:        *semaphore.NewSemaphore(parallelCount),
-		SaveFileEncoding: saveFileEncoding,
-		QuitIfExists:     quitIfExists,
-		LatestPageID:     sinaLatestPageID,
-		EarliestPageID:   sinaEarliestPageID,
-	}
-
-	x := &xgoo.Xgoo{
-		Semaphore:        *semaphore.NewSemaphore(parallelCount),
-		SaveFileEncoding: saveFileEncoding,
-		QuitIfExists:     quitIfExists,
-		LatestPageID:     xgooLatestPageID,
-		EarliestPageID:   xgooEarliestPageID,
-	}
-
-	w := &weiqitv.WeiqiTV{
-		Semaphore:        *semaphore.NewSemaphore(parallelCount),
-		SaveFileEncoding: saveFileEncoding,
-		QuitIfExists:     quitIfExists,
-		StartID:          weiqitvStartID,
-		EndID:            weiqitvEndID,
-	}
-
-	o := &onegreen.Onegreen{
-		Semaphore:        *semaphore.NewSemaphore(parallelCount),
-		SaveFileEncoding: saveFileEncoding,
-		QuitIfExists:     quitIfExists,
-	}
-
-	t := &tom.Tom{
-		Semaphore:        *semaphore.NewSemaphore(parallelCount),
-		SaveFileEncoding: saveFileEncoding,
-		QuitIfExists:     quitIfExists,
-	}
-
 	var wg sync.WaitGroup
-	wg.Add(7)
-	go l.Download(&wg)
-	go h.Download(&wg)
-	go s.Download(&wg)
-	go t.Download(&wg)
-	go x.Download(&wg)
-	go w.Download(&wg)
-	go o.Download(&wg)
 
+	if hoetomEnabled {
+		h := &hoetom.Hoetom{
+			Semaphore:        *semaphore.NewSemaphore(parallelCount),
+			SaveFileEncoding: saveFileEncoding,
+			QuitIfExists:     quitIfExists,
+			LatestPageID:     hoetomLatestPageID,
+			EarliestPageID:   hoetomEarliestPageID,
+		}
+		wg.Add(1)
+		go h.Download(&wg)
+	}
+
+	if lolEnabled {
+		l := &lol.Lol{
+			Semaphore:        *semaphore.NewSemaphore(parallelCount),
+			SaveFileEncoding: saveFileEncoding,
+			QuitIfExists:     quitIfExists,
+			LatestID:         lolLatestID,
+			EarliestID:       lolEarliestID,
+		}
+		wg.Add(1)
+		go l.Download(&wg)
+	}
+
+	if sinaEnabled {
+		s := &sina.Sina{
+			Semaphore:        *semaphore.NewSemaphore(parallelCount),
+			SaveFileEncoding: saveFileEncoding,
+			QuitIfExists:     quitIfExists,
+			LatestPageID:     sinaLatestPageID,
+			EarliestPageID:   sinaEarliestPageID,
+		}
+		wg.Add(1)
+		go s.Download(&wg)
+	}
+
+	if xgooEnabled {
+		x := &xgoo.Xgoo{
+			Semaphore:        *semaphore.NewSemaphore(parallelCount),
+			SaveFileEncoding: saveFileEncoding,
+			QuitIfExists:     quitIfExists,
+			LatestPageID:     xgooLatestPageID,
+			EarliestPageID:   xgooEarliestPageID,
+		}
+		wg.Add(1)
+		go x.Download(&wg)
+	}
+
+	if weiqitvEnabled {
+		w := &weiqitv.WeiqiTV{
+			Semaphore:        *semaphore.NewSemaphore(parallelCount),
+			SaveFileEncoding: saveFileEncoding,
+			QuitIfExists:     quitIfExists,
+			StartID:          weiqitvStartID,
+			EndID:            weiqitvEndID,
+		}
+		wg.Add(1)
+		go w.Download(&wg)
+	}
+
+	if onegreenEnabled {
+		o := &onegreen.Onegreen{
+			Semaphore:        *semaphore.NewSemaphore(parallelCount),
+			SaveFileEncoding: saveFileEncoding,
+			QuitIfExists:     quitIfExists,
+		}
+		wg.Add(1)
+		go o.Download(&wg)
+	}
+
+	if tomEnabled {
+		t := &tom.Tom{
+			Semaphore:        *semaphore.NewSemaphore(parallelCount),
+			SaveFileEncoding: saveFileEncoding,
+			QuitIfExists:     quitIfExists,
+		}
+		wg.Add(1)
+		go t.Download(&wg)
+	}
 	wg.Wait()
+
 	fmt.Println("total downloaded ",
-		l.DownloadCount+h.DownloadCount+s.DownloadCount+t.DownloadCount+x.DownloadCount+w.DownloadCount+o.DownloadCount,
+		//l.DownloadCount+h.DownloadCount+s.DownloadCount+t.DownloadCount+x.DownloadCount+w.DownloadCount+o.DownloadCount,
 		" SGFs")
 }
