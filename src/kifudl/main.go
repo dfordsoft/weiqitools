@@ -61,7 +61,7 @@ func main() {
 
 	var h *hoetom.Hoetom
 	if hoetomEnabled {
-		h := &hoetom.Hoetom{
+		h = &hoetom.Hoetom{
 			Semaphore:        *semaphore.NewSemaphore(parallelCount),
 			SaveFileEncoding: saveFileEncoding,
 			QuitIfExists:     quitIfExists,
@@ -74,7 +74,7 @@ func main() {
 
 	var l *lol.Lol
 	if lolEnabled {
-		l := &lol.Lol{
+		l = &lol.Lol{
 			Semaphore:        *semaphore.NewSemaphore(parallelCount),
 			SaveFileEncoding: saveFileEncoding,
 			QuitIfExists:     quitIfExists,
@@ -87,7 +87,7 @@ func main() {
 
 	var s *sina.Sina
 	if sinaEnabled {
-		s := &sina.Sina{
+		s = &sina.Sina{
 			Semaphore:        *semaphore.NewSemaphore(parallelCount),
 			SaveFileEncoding: saveFileEncoding,
 			QuitIfExists:     quitIfExists,
@@ -100,7 +100,7 @@ func main() {
 
 	var x *xgoo.Xgoo
 	if xgooEnabled {
-		x := &xgoo.Xgoo{
+		x = &xgoo.Xgoo{
 			Semaphore:        *semaphore.NewSemaphore(parallelCount),
 			SaveFileEncoding: saveFileEncoding,
 			QuitIfExists:     quitIfExists,
@@ -113,7 +113,7 @@ func main() {
 
 	var w *weiqitv.WeiqiTV
 	if weiqitvEnabled {
-		w := &weiqitv.WeiqiTV{
+		w = &weiqitv.WeiqiTV{
 			Semaphore:        *semaphore.NewSemaphore(parallelCount),
 			SaveFileEncoding: saveFileEncoding,
 			QuitIfExists:     quitIfExists,
