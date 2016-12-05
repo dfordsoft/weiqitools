@@ -196,7 +196,7 @@ func (o *Onegreen) Download(w *sync.WaitGroup) {
 	}
 
 	pagelist := []Page{
-		{"http://game.onegreen.net/weiqi/ShowClass.asp?ClassID=1218&page=%d", 1254},
+		{"http://game.onegreen.net/weiqi/ShowClass.asp?ClassID=1218&page=%d", 2000},
 		{"http://game.onegreen.net/weiqi/ShowClass.asp?ClassID=1223&page=%d", 514},
 	}
 
