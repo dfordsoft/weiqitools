@@ -122,6 +122,7 @@ doRequest:
 		u.Path[1:], kifuInfo.Name, kifuInfo.B, kifuInfo.LB, kifuInfo.W, kifuInfo.LW)
 	if util.Exists(fullPath) {
 		if w.QuitIfExists {
+			log.Println(fullPath, " exists, just quit")
 			w.quit = true
 		}
 		return

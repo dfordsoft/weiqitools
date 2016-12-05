@@ -163,7 +163,7 @@ startGettingPath:
 			}
 		} else {
 			if l.QuitIfExists {
-				log.Println(fullPath, "exists, quit now")
+				log.Println(fullPath, "exists, just quit")
 				l.quit = true
 			}
 		}

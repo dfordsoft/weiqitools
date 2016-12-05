@@ -119,6 +119,7 @@ doRequest:
 	fullPath = string(fullPathByte)
 	if util.Exists(fullPath) {
 		if o.QuitIfExists {
+			log.Println(fullPath, " exists, just quit")
 			o.quit = true
 		}
 		return

@@ -116,6 +116,7 @@ doRequest:
 	fullPath := "tom/" + u.Path[1:]
 	if util.Exists(fullPath) {
 		if t.QuitIfExists {
+			log.Println(fullPath, " exists, just quit")
 			t.quit = true
 		}
 		return

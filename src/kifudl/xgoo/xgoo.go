@@ -95,6 +95,7 @@ doRequest:
 	fullPath := "xgoo/" + u.Path[1:]
 	if util.Exists(fullPath) {
 		if x.QuitIfExists {
+			log.Println(fullPath, " exists, just quit")
 			x.quit = true
 		}
 		return
