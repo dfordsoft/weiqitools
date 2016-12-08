@@ -59,6 +59,7 @@ func main() {
 
 	flag.Parse()
 
+	fmt.Println("Kifu downloader (c) 2016 https://minidump.info & missdeer@dfordsoft.com . All right reserved.")
 	fmt.Println("save SGF file encoding", saveFileEncoding)
 	fmt.Println("quit if the target file exists", quitIfExists)
 	fmt.Println("the parallel routines count", parallelCount)
