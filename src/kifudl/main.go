@@ -192,4 +192,6 @@ func main() {
 		downloadCount += g.DownloadCount
 	}
 	fmt.Println("total downloaded ", downloadCount, " SGFs")
+	var c byte
+	fmt.Scanln(&c)
 }
