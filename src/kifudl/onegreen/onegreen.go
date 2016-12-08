@@ -25,7 +25,7 @@ var (
 
 type Onegreen struct {
 	sync.WaitGroup
-	semaphore.Semaphore
+	*semaphore.Semaphore
 	SaveFileEncoding string
 	quit             bool // assume it's false as initial value
 	QuitIfExists     bool

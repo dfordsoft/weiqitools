@@ -64,11 +64,11 @@ func main() {
 	fmt.Println("the parallel routines count", parallelCount)
 
 	var wg sync.WaitGroup
-
+	sem := semaphore.NewSemaphore(parallelCount)
 	var h *hoetom.Hoetom
 	if hoetomEnabled {
 		h = &hoetom.Hoetom{
-			Semaphore:        *semaphore.NewSemaphore(parallelCount),
+			Semaphore:        sem,
 			SaveFileEncoding: saveFileEncoding,
 			QuitIfExists:     quitIfExists,
 			LatestPageID:     hoetomLatestPageID,
@@ -81,7 +81,7 @@ func main() {
 	var l *lol.Lol
 	if lolEnabled {
 		l = &lol.Lol{
-			Semaphore:        *semaphore.NewSemaphore(parallelCount),
+			Semaphore:        sem,
 			SaveFileEncoding: saveFileEncoding,
 			QuitIfExists:     quitIfExists,
 			LatestID:         lolLatestID,
@@ -94,7 +94,7 @@ func main() {
 	var s *sina.Sina
 	if sinaEnabled {
 		s = &sina.Sina{
-			Semaphore:        *semaphore.NewSemaphore(parallelCount),
+			Semaphore:        sem,
 			SaveFileEncoding: saveFileEncoding,
 			QuitIfExists:     quitIfExists,
 			LatestPageID:     sinaLatestPageID,
@@ -107,7 +107,7 @@ func main() {
 	var g *gokifu.GoKifu
 	if gokifuEnabled {
 		g = &gokifu.GoKifu{
-			Semaphore:        *semaphore.NewSemaphore(parallelCount),
+			Semaphore:        sem,
 			SaveFileEncoding: saveFileEncoding,
 			QuitIfExists:     quitIfExists,
 			LatestPageID:     gokifuLatestPageID,
@@ -120,7 +120,7 @@ func main() {
 	var x *xgoo.Xgoo
 	if xgooEnabled {
 		x = &xgoo.Xgoo{
-			Semaphore:        *semaphore.NewSemaphore(parallelCount),
+			Semaphore:        sem,
 			SaveFileEncoding: saveFileEncoding,
 			QuitIfExists:     quitIfExists,
 			LatestPageID:     xgooLatestPageID,
@@ -133,7 +133,7 @@ func main() {
 	var w *weiqitv.WeiqiTV
 	if weiqitvEnabled {
 		w = &weiqitv.WeiqiTV{
-			Semaphore:        *semaphore.NewSemaphore(parallelCount),
+			Semaphore:        sem,
 			SaveFileEncoding: saveFileEncoding,
 			QuitIfExists:     quitIfExists,
 			StartID:          weiqitvStartID,
@@ -146,7 +146,7 @@ func main() {
 	var o *onegreen.Onegreen
 	if onegreenEnabled {
 		o = &onegreen.Onegreen{
-			Semaphore:        *semaphore.NewSemaphore(parallelCount),
+			Semaphore:        sem,
 			SaveFileEncoding: saveFileEncoding,
 			QuitIfExists:     quitIfExists,
 		}
@@ -157,7 +157,7 @@ func main() {
 	var t *tom.Tom
 	if tomEnabled {
 		t = &tom.Tom{
-			Semaphore:        *semaphore.NewSemaphore(parallelCount),
+			Semaphore:        sem,
 			SaveFileEncoding: saveFileEncoding,
 			QuitIfExists:     quitIfExists,
 		}

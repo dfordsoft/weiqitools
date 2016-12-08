@@ -25,7 +25,7 @@ var (
 
 type Lol struct {
 	sync.WaitGroup
-	semaphore.Semaphore
+	*semaphore.Semaphore
 	csrfmiddlewaretoken string
 	csrftoken           string
 	quit                bool // assume it's false as initial value

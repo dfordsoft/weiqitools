@@ -24,7 +24,7 @@ var (
 
 type Hoetom struct {
 	sync.WaitGroup
-	semaphore.Semaphore
+	*semaphore.Semaphore
 	sessionID        string
 	userID           string
 	password         string
