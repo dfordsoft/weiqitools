@@ -90,7 +90,7 @@ doRequest:
 		return
 	}
 
-	u, err := url.Parse(sgf)
+	u, err := url.Parse(url.QueryEscape(sgf))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -128,7 +128,7 @@ func (g *GoKifu) downloadPage(page int) {
 		g.Done()
 	}()
 	retry := 0
-	fullURL := fmt.Sprintf("http://gokifu.com/?p=%d", page)
+	fullURL := fmt.Sprintf("http://gokifu.com/zh/index.php?p=%d", page)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
 		log.Println("Could not parse page request:", err)
@@ -162,7 +162,7 @@ doPageRequest:
 		return
 	}
 
-	regex := regexp.MustCompile(`http:\/\/gokifu\.com\/f\/[^\.]+\.sgf`)
+	regex := regexp.MustCompile(`http:\/\/gokifu\.com\/zh\/f\/[^"]+`)
 	ss := regex.FindAll(data, -1)
 	dl := make(map[string]bool, len(ss))
 	for _, match := range ss {
