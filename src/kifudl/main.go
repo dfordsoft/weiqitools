@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"kifudl/gokifu"
 	"kifudl/hoetom"
 	"kifudl/lol"
 	"kifudl/onegreen"
@@ -19,7 +20,7 @@ func main() {
 	var quitIfExists bool
 	var saveFileEncoding string
 	var parallelCount int
-	var lolEnabled, xgooEnabled, sinaEnabled, tomEnabled, onegreenEnabled, hoetomEnabled, weiqitvEnabled bool
+	var lolEnabled, xgooEnabled, sinaEnabled, tomEnabled, onegreenEnabled, hoetomEnabled, weiqitvEnabled, gokifuEnabled bool
 	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
 	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
 	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
@@ -30,6 +31,7 @@ func main() {
 	flag.BoolVar(&onegreenEnabled, "onegreen-enabled", true, "fetch kifu from onegreen")
 	flag.BoolVar(&hoetomEnabled, "hoetom-enabled", true, "fetch kifu from hoetom")
 	flag.BoolVar(&weiqitvEnabled, "weiqitv-enabled", true, "fetch kifu from weiqitv")
+	flag.BoolVar(&gokifuEnabled, "gokifu-enabled", true, "fetch kifu from gokifu")
 
 	var hoetomLatestPageID, hoetomEarliestPageID int
 	flag.IntVar(&hoetomLatestPageID, "hoetom-latest-page-id", 1, "the latest page id of hoetom")
@@ -42,6 +44,10 @@ func main() {
 	var sinaLatestPageID, sinaEarliestPageID int
 	flag.IntVar(&sinaLatestPageID, "sina-latest-page-id", 0, "the latest page id of sina")
 	flag.IntVar(&sinaEarliestPageID, "sina-earliest-page-id", 689, "the earliest page id of sina")
+
+	var gokifuLatestPageID, gokifuEarliestPageID int
+	flag.IntVar(&gokifuLatestPageID, "gokifu-latest-page-id", 1, "the latest page id of gokifu")
+	flag.IntVar(&gokifuEarliestPageID, "gokifu-earliest-page-id", 1818, "the earliest page id of gokifu")
 
 	var xgooLatestPageID, xgooEarliestPageID int
 	flag.IntVar(&xgooLatestPageID, "xgoo-latest-page-id", 1, "the latest page id of xgoo")
@@ -96,6 +102,19 @@ func main() {
 		}
 		wg.Add(1)
 		go s.Download(&wg)
+	}
+
+	var g *gokifu.GoKifu
+	if gokifuEnabled {
+		g = &gokifu.GoKifu{
+			Semaphore:        *semaphore.NewSemaphore(parallelCount),
+			SaveFileEncoding: saveFileEncoding,
+			QuitIfExists:     quitIfExists,
+			LatestPageID:     gokifuLatestPageID,
+			EarliestPageID:   gokifuEarliestPageID,
+		}
+		wg.Add(1)
+		go g.Download(&wg)
 	}
 
 	var x *xgoo.Xgoo
@@ -168,6 +187,9 @@ func main() {
 	}
 	if hoetomEnabled {
 		downloadCount += h.DownloadCount
+	}
+	if gokifuEnabled {
+		downloadCount += g.DownloadCount
 	}
 	fmt.Println("total downloaded ", downloadCount, " SGFs")
 }
