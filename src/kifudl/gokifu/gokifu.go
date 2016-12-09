@@ -99,7 +99,7 @@ doRequest:
 	date := util.InsertSlashNth(ff[2], 4)
 	filename = strings.Join(ff[3:], "-")
 	ff = strings.Split(ff[0], "/")
-	fullPath := fmt.Sprintf("gokifu/%s/%s-%s", date, ff[len(ff)-1], filename)
+	fullPath := fmt.Sprintf("gokifu/%s/%s-%s", date[:7], ff[len(ff)-1], filename)
 	if util.Exists(fullPath) {
 		if g.QuitIfExists {
 			log.Println(fullPath, " exists, just quit")
