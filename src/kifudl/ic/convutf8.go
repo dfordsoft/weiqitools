@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/japanese"
 	"golang.org/x/text/encoding/korean"
 	"golang.org/x/text/encoding/simplifiedchinese"
@@ -13,29 +14,38 @@ import (
 	"golang.org/x/text/transform"
 )
 
+var (
+	transformers = map[string]encoding.Encoding{
+		"gbk":         simplifiedchinese.GBK,
+		"cp936":       simplifiedchinese.GBK,
+		"windows-936": simplifiedchinese.GBK,
+		"gb18030":     simplifiedchinese.GB18030,
+		"gb2312":      simplifiedchinese.HZGB2312,
+		"big5":        traditionalchinese.Big5,
+		"big-5":       traditionalchinese.Big5,
+		"cp950":       traditionalchinese.Big5,
+		"euc-kr":      korean.EUCKR,
+		"euckr":       korean.EUCKR,
+		"cp949":       korean.EUCKR,
+		"euc-jp":      japanese.EUCJP,
+		"eucjp":       japanese.EUCJP,
+		"shift-jis":   japanese.ShiftJIS,
+		"iso-2022-jp": japanese.ISO2022JP,
+		"cp932":       japanese.ISO2022JP,
+		"windows-31j": japanese.ISO2022JP,
+	}
+)
+
 // ToUTF8 convert from CJK encoding to UTF-8
 func ToUTF8(from string, s []byte) ([]byte, error) {
 	var reader *transform.Reader
-	switch strings.ToLower(from) {
-	case "gbk", "cp936", "windows-936":
-		reader = transform.NewReader(bytes.NewReader(s), simplifiedchinese.GBK.NewDecoder())
-	case "gb18030":
-		reader = transform.NewReader(bytes.NewReader(s), simplifiedchinese.GB18030.NewDecoder())
-	case "gb2312":
-		reader = transform.NewReader(bytes.NewReader(s), simplifiedchinese.HZGB2312.NewDecoder())
-	case "big5", "big-5", "cp950":
-		reader = transform.NewReader(bytes.NewReader(s), traditionalchinese.Big5.NewDecoder())
-	case "euc-kr", "euckr", "cp949":
-		reader = transform.NewReader(bytes.NewReader(s), korean.EUCKR.NewDecoder())
-	case "euc-jp", "eucjp":
-		reader = transform.NewReader(bytes.NewReader(s), japanese.EUCJP.NewDecoder())
-	case "shift-jis":
-		reader = transform.NewReader(bytes.NewReader(s), japanese.ShiftJIS.NewDecoder())
-	case "iso-2022-jp", "cp932", "windows-31j":
-		reader = transform.NewReader(bytes.NewReader(s), japanese.ISO2022JP.NewDecoder())
-	default:
+
+	transformer, ok := transformers[strings.ToLower(from)]
+	if !ok {
 		return s, errors.New("Unsupported encoding " + from)
 	}
+	reader = transform.NewReader(bytes.NewReader(s), transformer.NewDecoder())
+
 	d, e := ioutil.ReadAll(reader)
 	if e != nil {
 		return nil, e
@@ -46,26 +56,13 @@ func ToUTF8(from string, s []byte) ([]byte, error) {
 // FromUTF8 convert from UTF-8 encoding to CJK encoding
 func FromUTF8(to string, s []byte) ([]byte, error) {
 	var reader *transform.Reader
-	switch strings.ToLower(to) {
-	case "gbk", "cp936", "windows-936":
-		reader = transform.NewReader(bytes.NewReader(s), simplifiedchinese.GBK.NewEncoder())
-	case "gb18030":
-		reader = transform.NewReader(bytes.NewReader(s), simplifiedchinese.GB18030.NewEncoder())
-	case "gb2312":
-		reader = transform.NewReader(bytes.NewReader(s), simplifiedchinese.HZGB2312.NewEncoder())
-	case "big5", "big-5", "cp950":
-		reader = transform.NewReader(bytes.NewReader(s), traditionalchinese.Big5.NewEncoder())
-	case "euc-kr", "euckr", "cp949":
-		reader = transform.NewReader(bytes.NewReader(s), korean.EUCKR.NewEncoder())
-	case "euc-jp", "eucjp":
-		reader = transform.NewReader(bytes.NewReader(s), japanese.EUCJP.NewEncoder())
-	case "shift-jis":
-		reader = transform.NewReader(bytes.NewReader(s), japanese.ShiftJIS.NewEncoder())
-	case "iso-2022-jp", "cp932", "windows-31j":
-		reader = transform.NewReader(bytes.NewReader(s), japanese.ISO2022JP.NewEncoder())
-	default:
+
+	transformer, ok := transformers[strings.ToLower(to)]
+	if !ok {
 		return s, errors.New("Unsupported encoding " + to)
 	}
+	reader = transform.NewReader(bytes.NewReader(s), transformer.NewEncoder())
+
 	d, e := ioutil.ReadAll(reader)
 	if e != nil {
 		return nil, e
