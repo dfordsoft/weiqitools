@@ -162,7 +162,7 @@ startGettingPath:
 				}
 			}
 		} else {
-			if l.QuitIfExists {
+			if !l.quit && l.QuitIfExists {
 				log.Println(fullPath, "exists, just quit")
 				l.quit = true
 			}

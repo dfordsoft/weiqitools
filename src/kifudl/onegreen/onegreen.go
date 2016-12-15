@@ -118,7 +118,7 @@ doRequest:
 	fullPathByte = append(fullPathByte[:insertPos], append([]byte{'/'}, fullPathByte[insertPos:]...)...)
 	fullPath = string(fullPathByte)
 	if util.Exists(fullPath) {
-		if o.QuitIfExists {
+		if !o.quit && o.QuitIfExists {
 			log.Println(fullPath, " exists, just quit")
 			o.quit = true
 		}

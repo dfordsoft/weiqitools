@@ -101,7 +101,7 @@ doRequest:
 	ff = strings.Split(ff[0], "/")
 	fullPath := fmt.Sprintf("gokifu/%s/%s-%s", date[:7], ff[len(ff)-1], filename)
 	if util.Exists(fullPath) {
-		if g.QuitIfExists {
+		if !g.quit && g.QuitIfExists {
 			log.Println(fullPath, " exists, just quit")
 			g.quit = true
 		}

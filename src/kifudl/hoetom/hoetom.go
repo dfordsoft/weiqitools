@@ -150,7 +150,7 @@ doRequest:
 	}
 	fullPath := fmt.Sprintf("%s/%s", dir, filename)
 	if util.Exists(fullPath) {
-		if h.QuitIfExists {
+		if !h.quit && h.QuitIfExists {
 			log.Println(fullPath, " exists, just quit")
 			h.quit = true
 		}

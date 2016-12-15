@@ -94,7 +94,7 @@ doRequest:
 	}
 	fullPath := "sina/" + u.Path[1:]
 	if util.Exists(fullPath) {
-		if s.QuitIfExists {
+		if !s.quit && s.QuitIfExists {
 			log.Println(fullPath, " exists, just quit")
 			s.quit = true
 		}

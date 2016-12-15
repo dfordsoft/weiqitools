@@ -121,7 +121,7 @@ doRequest:
 	fullPath := fmt.Sprintf("weiqitv/%s/%s_%s_%s_vs_%s_%s.sgf",
 		util.InsertSlashNth(u.Path[16:], 4), kifuInfo.Name, kifuInfo.B, kifuInfo.LB, kifuInfo.W, kifuInfo.LW)
 	if util.Exists(fullPath) {
-		if w.QuitIfExists {
+		if !w.quit && w.QuitIfExists {
 			log.Println(fullPath, " exists, just quit")
 			w.quit = true
 		}
