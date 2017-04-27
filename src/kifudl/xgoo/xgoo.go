@@ -46,7 +46,7 @@ func (x *Xgoo) downloadKifu(sgf string) {
 
 	req, err := http.NewRequest("GET", sgf, nil)
 	if err != nil {
-		log.Println("Could not parse kifu request:", err)
+		log.Println("xgoo - Could not parse kifu request:", err)
 		return
 	}
 
@@ -58,7 +58,7 @@ func (x *Xgoo) downloadKifu(sgf string) {
 doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("Could not send kifu request:", err)
+		log.Println("xgoo - Could not send kifu request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -69,7 +69,7 @@ doRequest:
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		log.Println("kifu request not 200")
+		log.Println("xgoo - kifu request not 200")
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -79,7 +79,7 @@ doRequest:
 	}
 	kifu, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("cannot read kifu content", err)
+		log.Println("xgoo - cannot read kifu content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -124,7 +124,7 @@ func (x *Xgoo) downloadPage(page int) {
 	fullURL := fmt.Sprintf("http://qipu.xgoo.org/index.php?page=%d", page)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
-		log.Println("Could not parse page request:", err)
+		log.Println("xgoo - Could not parse page request:", err)
 		return
 	}
 
@@ -134,7 +134,7 @@ func (x *Xgoo) downloadPage(page int) {
 doPageRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("Could not send page request:", err)
+		log.Println("xgoo - Could not send page request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -146,7 +146,7 @@ doPageRequest:
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("cannot read page content", err)
+		log.Println("xgoo - cannot read page content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)

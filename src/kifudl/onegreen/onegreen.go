@@ -51,7 +51,7 @@ func (o *Onegreen) downloadKifu(sgf string) {
 
 	req, err := http.NewRequest("GET", sgf, nil)
 	if err != nil {
-		log.Println("Could not parse kifu request:", err)
+		log.Println("onegreen - Could not parse kifu request:", err)
 		return
 	}
 
@@ -63,7 +63,7 @@ func (o *Onegreen) downloadKifu(sgf string) {
 doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("Could not send kifu request:", err)
+		log.Println("onegreen - Could not send kifu request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -74,7 +74,7 @@ doRequest:
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		log.Println("kifu request not 200")
+		log.Println("onegreen - kifu request not 200")
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -84,7 +84,7 @@ doRequest:
 	}
 	kifu, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("cannot read kifu content", err)
+		log.Println("onegreen - cannot read kifu content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -96,13 +96,13 @@ doRequest:
 	// extract SGF data
 	index := bytes.Index(kifu, []byte(`sgftext=`))
 	if index < 0 {
-		log.Println("cannot find start keyword")
+		log.Println("onegreen - cannot find start keyword")
 		return
 	}
 	kifu = kifu[index+8:]
 	index = bytes.Index(kifu, []byte(`" ALLOWSCRIPTACCESS=`))
 	if index < 0 {
-		log.Println("cannot find end keyword")
+		log.Println("onegreen - cannot find end keyword")
 		return
 	}
 	kifu = kifu[:index]
@@ -148,7 +148,7 @@ func (o *Onegreen) downloadPage(page string) {
 	retry := 0
 	req, err := http.NewRequest("GET", page, nil)
 	if err != nil {
-		log.Println("Could not parse page request:", err)
+		log.Println("onegreen - Could not parse page request:", err)
 		return
 	}
 
@@ -158,7 +158,7 @@ func (o *Onegreen) downloadPage(page string) {
 doPageRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("Could not send page request:", err)
+		log.Println("onegreen - Could not send page request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -170,7 +170,7 @@ doPageRequest:
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("cannot read page content", err)
+		log.Println("onegreen - cannot read page content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)

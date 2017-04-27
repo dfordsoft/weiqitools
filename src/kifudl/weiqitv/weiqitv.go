@@ -61,7 +61,7 @@ func (w *WeiqiTV) downloadKifu(sgf string) {
 
 	req, err := http.NewRequest("GET", sgf, nil)
 	if err != nil {
-		log.Println("Could not parse kifu request:", err)
+		log.Println("weiqitv - Could not parse kifu request:", err)
 		return
 	}
 
@@ -73,7 +73,7 @@ func (w *WeiqiTV) downloadKifu(sgf string) {
 doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("Could not send kifu request:", err)
+		log.Println("weiqitv - Could not send kifu request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -84,7 +84,7 @@ doRequest:
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		log.Println("kifu request not 200")
+		log.Println("weiqitv - kifu request not 200")
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -94,7 +94,7 @@ doRequest:
 	}
 	kifu, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("cannot read kifu content", err)
+		log.Println("weiqitv - cannot read kifu content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -105,7 +105,7 @@ doRequest:
 
 	var kifuInfo KifuInfo
 	if err = json.Unmarshal(kifu, &kifuInfo); err != nil {
-		log.Println("cannot unmarshal json", err)
+		log.Println("weiqitv - cannot unmarshal json", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -170,7 +170,7 @@ func (w *WeiqiTV) downloadIndex(id int) (res []string) {
 
 	req, err := http.NewRequest("GET", `http://yi.weiqitv.com/pub/kifu?`+getValues.Encode(), nil)
 	if err != nil {
-		log.Println("Could not parse download index request:", err)
+		log.Println("weiqitv - Could not parse download index request:", err)
 		return
 	}
 
@@ -182,7 +182,7 @@ func (w *WeiqiTV) downloadIndex(id int) (res []string) {
 doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("Could not send download index request:", err)
+		log.Println("weiqitv - Could not send download index request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -193,7 +193,7 @@ doRequest:
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		log.Println("index request not 200")
+		log.Println("weiqitv - index request not 200")
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -203,7 +203,7 @@ doRequest:
 	}
 	index, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("cannot read index content", err, string(index))
+		log.Println("weiqitv - cannot read index content", err, string(index))
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -214,7 +214,7 @@ doRequest:
 
 	var indexes Indexes
 	if err := json.Unmarshal(index, &indexes); err != nil {
-		log.Println("cannot unmarshal indexes", err)
+		log.Println("weiqitv - cannot unmarshal indexes", err)
 		return
 	}
 

@@ -42,7 +42,7 @@ func (h *Hoetom) getSessionID() {
 	postBody := fmt.Sprintf("userid=%s&passwd=%s&passwdmd5=%s", h.userID, h.password, h.passwordMd5)
 	req, err := http.NewRequest("POST", fullURL, strings.NewReader(postBody))
 	if err != nil {
-		log.Println("Could not parse login request:", err)
+		log.Println("hoetom - Could not parse login request:", err)
 		return
 	}
 
@@ -55,7 +55,7 @@ func (h *Hoetom) getSessionID() {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("Could not send login request:", err)
+		log.Println("hoetom - Could not send login request:", err)
 		return
 	}
 
@@ -71,7 +71,7 @@ func (h *Hoetom) getSessionID() {
 			}
 		}
 	}
-	log.Println("cannot get session id")
+	log.Println("hoetom - cannot get session id")
 }
 
 func (h *Hoetom) downloadKifu(id int) {
@@ -88,7 +88,7 @@ func (h *Hoetom) downloadKifu(id int) {
 	fullURL := fmt.Sprintf("http://www.hoetom.com/chessmanual.jsp?id=%d", id)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
-		log.Println("Could not parse kifu request:", err)
+		log.Println("hoetom - Could not parse kifu request:", err)
 		return
 	}
 
@@ -102,7 +102,7 @@ func (h *Hoetom) downloadKifu(id int) {
 doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("Could not send kifu request:", err)
+		log.Println("hoetom - Could not send kifu request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -113,7 +113,7 @@ doRequest:
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		log.Println("kifu request not 200:", resp.StatusCode, fullURL)
+		log.Println("hoetom - kifu request not 200:", resp.StatusCode, fullURL)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -123,7 +123,7 @@ doRequest:
 	}
 	kifu, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("cannot read kifu content", err)
+		log.Println("hoetom - cannot read kifu content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -133,7 +133,7 @@ doRequest:
 	}
 	ss := strings.Split(resp.Header.Get("Content-Disposition"), ";")
 	if len(ss) < 2 {
-		log.Println("cannot get content-disposition")
+		log.Println("hoetom - cannot get content-disposition")
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -175,7 +175,7 @@ func (h *Hoetom) downloadPage(page int) {
 	fullURL := fmt.Sprintf("http://www.hoetom.com/matchlatest_2011.jsp?pn=%d", page)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
-		log.Println("Could not parse page request:", err)
+		log.Println("hoetom - Could not parse page request:", err)
 		return
 	}
 
@@ -189,7 +189,7 @@ func (h *Hoetom) downloadPage(page int) {
 doPageRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("Could not send page request:", err)
+		log.Println("hoetom - Could not send page request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -201,7 +201,7 @@ doPageRequest:
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("cannot read page content", err)
+		log.Println("hoetom - cannot read page content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)

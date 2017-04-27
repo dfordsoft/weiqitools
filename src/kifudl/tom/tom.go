@@ -47,7 +47,7 @@ func (t *Tom) getNextPageURL(page string) string {
 		n := p[index+1 : i]
 		number, err := strconv.Atoi(n)
 		if err != nil {
-			log.Println("converting", n, "to number failed", err)
+			log.Println("tom - converting", n, "to number failed", err)
 			return p
 		}
 		number++
@@ -70,7 +70,7 @@ func (t *Tom) downloadKifu(sgf string) {
 
 	req, err := http.NewRequest("GET", sgf, nil)
 	if err != nil {
-		log.Println("Could not parse kifu request:", err)
+		log.Println("tom - Could not parse kifu request:", err)
 		return
 	}
 
@@ -83,7 +83,7 @@ func (t *Tom) downloadKifu(sgf string) {
 doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("Could not send kifu request:", err)
+		log.Println("tom - Could not send kifu request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -94,7 +94,7 @@ doRequest:
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		log.Println("kifu request not 200")
+		log.Println("tom - kifu request not 200")
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -104,7 +104,7 @@ doRequest:
 	}
 	kifu, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("cannot read kifu content", err)
+		log.Println("tom - cannot read kifu content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -144,7 +144,7 @@ func (t *Tom) downloadPage(page string) bool {
 	retry := 0
 	req, err := http.NewRequest("GET", page, nil)
 	if err != nil {
-		log.Println("Could not parse page request:", err)
+		log.Println("tom - Could not parse page request:", err)
 		return false
 	}
 
@@ -154,7 +154,7 @@ func (t *Tom) downloadPage(page string) bool {
 doPageRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("Could not send page request:", err)
+		log.Println("tom - Could not send page request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -166,7 +166,7 @@ doPageRequest:
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("cannot read page content", err)
+		log.Println("tom - cannot read page content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
