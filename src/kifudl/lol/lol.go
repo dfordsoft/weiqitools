@@ -37,14 +37,14 @@ type Lol struct {
 }
 
 func (l *Lol) getContent(path string) []byte {
-	fullURL := fmt.Sprintf("http://101weiqi.com%s", path)
+	fullURL := fmt.Sprintf("https://www.101weiqi.com%s", path)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
 		log.Println("101weiqi - Could not parse get kifu request:", err)
 		return []byte("")
 	}
 
-	req.Header.Set("Referer", "http://101weiqi.com")
+	req.Header.Set("Referer", "https://www.101weiqi.com")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
@@ -80,13 +80,13 @@ type KifuPathResponse struct {
 func (l *Lol) getPath(index int) string {
 	// login
 	data := fmt.Sprintf(`pid=%d&csrfmiddlewaretoken=%s`, index, l.csrfmiddlewaretoken)
-	req, err := http.NewRequest("POST", "http://www.101weiqi.com/chessbook/download_sgf/", bytes.NewBufferString(data))
+	req, err := http.NewRequest("POST", "https://www.101weiqi.com/chessbook/download_sgf/", bytes.NewBufferString(data))
 	if err != nil {
 		log.Println("101weiqi - Could not parse get kifu path request:", err)
 		return ""
 	}
 
-	req.Header.Set("Referer", fmt.Sprintf("http://www.101weiqi.com/chessbook/chess/%d/", index))
+	req.Header.Set("Referer", fmt.Sprintf("https://www.101weiqi.com/chessbook/chess/%d/", index))
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "application/json, text/javascript, */*; q=0.01")
 	req.Header.Set("X-Requested-With", `XMLHttpRequest`)
@@ -177,14 +177,14 @@ startGettingPath:
 }
 
 func (l *Lol) getCSRF() {
-	fullURL := fmt.Sprintf("http://101weiqi.com/chessbook/chess/%d", l.LatestID)
+	fullURL := fmt.Sprintf("https://www.101weiqi.com/chessbook/chess/%d", l.LatestID)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
 		log.Println("101weiqi - Could not parse get latest ID page request:", err)
 		return
 	}
 
-	req.Header.Set("Referer", "http://101weiqi.com")
+	req.Header.Set("Referer", "https://www.101weiqi.com")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
@@ -225,7 +225,7 @@ func (l *Lol) getCSRF() {
 }
 
 func (l *Lol) getLatestID() {
-	fullURL := fmt.Sprintf("http://101weiqi.com/chessbook/")
+	fullURL := fmt.Sprintf("https://www.101weiqi.com/chessbook/")
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
 		log.Println("101weiqi - Could not parse get chessbook page request:", err)
