@@ -133,7 +133,7 @@ func main() {
 		wg.Add(1)
 		go o.Download(&wg)
 	}
-
+	wg.Wait()
 	var downloadCount int32
 	if lolEnabled {
 		downloadCount += l.DownloadCount
