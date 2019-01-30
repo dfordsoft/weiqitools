@@ -8,8 +8,6 @@ import (
 	"kifudl/onegreen"
 	"kifudl/semaphore"
 	"kifudl/sina"
-	"kifudl/tom"
-	"kifudl/weiqitv"
 	"kifudl/xgoo"
 	"sync"
 
@@ -20,17 +18,15 @@ func main() {
 	var quitIfExists bool
 	var saveFileEncoding string
 	var parallelCount int
-	var lolEnabled, xgooEnabled, sinaEnabled, tomEnabled, onegreenEnabled, hoetomEnabled, weiqitvEnabled, gokifuEnabled bool
+	var lolEnabled, xgooEnabled, sinaEnabled, onegreenEnabled, hoetomEnabled, gokifuEnabled bool
 	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
 	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
 	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
 	flag.BoolVar(&lolEnabled, "lol-enabled", true, "fetch kifu from lol")
 	flag.BoolVar(&xgooEnabled, "xgoo-enabled", true, "fetch kifu from xgoo")
 	flag.BoolVar(&sinaEnabled, "sina-enabled", true, "fetch kifu from sina")
-	flag.BoolVar(&tomEnabled, "tom-enabled", true, "fetch kifu from tom")
 	flag.BoolVar(&onegreenEnabled, "onegreen-enabled", true, "fetch kifu from onegreen")
 	flag.BoolVar(&hoetomEnabled, "hoetom-enabled", true, "fetch kifu from hoetom")
-	flag.BoolVar(&weiqitvEnabled, "weiqitv-enabled", true, "fetch kifu from weiqitv")
 	flag.BoolVar(&gokifuEnabled, "gokifu-enabled", true, "fetch kifu from gokifu")
 
 	var hoetomLatestPageID, hoetomEarliestPageID int
@@ -53,13 +49,9 @@ func main() {
 	flag.IntVar(&xgooLatestPageID, "xgoo-latest-page-id", 1, "the latest page id of xgoo")
 	flag.IntVar(&xgooEarliestPageID, "xgoo-earliest-page-id", 1968, "the earliest page id of xgoo")
 
-	var weiqitvStartID, weiqitvEndID int
-	flag.IntVar(&weiqitvStartID, "weiqitv-start-id", 0, "the start id")
-	flag.IntVar(&weiqitvEndID, "weiqitv-end-id", 77281, "the end id")
-
 	flag.Parse()
 
-	fmt.Println("Kifu downloader (c) 2016 https://minidump.info & missdeer@dfordsoft.com . All right reserved.")
+	fmt.Println("Kifu downloader (c) 2016 - 2019 https://minidump.info & me@minidump.info. All right reserved.")
 	fmt.Println("save SGF file encoding", saveFileEncoding)
 	fmt.Println("quit if the target file exists", quitIfExists)
 	fmt.Println("the parallel routines count", parallelCount)
@@ -131,19 +123,6 @@ func main() {
 		go x.Download(&wg)
 	}
 
-	var w *weiqitv.WeiqiTV
-	if weiqitvEnabled {
-		w = &weiqitv.WeiqiTV{
-			Semaphore:        sem,
-			SaveFileEncoding: saveFileEncoding,
-			QuitIfExists:     quitIfExists,
-			StartID:          weiqitvStartID,
-			EndID:            weiqitvEndID,
-		}
-		wg.Add(1)
-		go w.Download(&wg)
-	}
-
 	var o *onegreen.Onegreen
 	if onegreenEnabled {
 		o = &onegreen.Onegreen{
@@ -155,18 +134,6 @@ func main() {
 		go o.Download(&wg)
 	}
 
-	var t *tom.Tom
-	if tomEnabled {
-		t = &tom.Tom{
-			Semaphore:        sem,
-			SaveFileEncoding: saveFileEncoding,
-			QuitIfExists:     quitIfExists,
-		}
-		wg.Add(1)
-		go t.Download(&wg)
-	}
-	wg.Wait()
-
 	var downloadCount int32
 	if lolEnabled {
 		downloadCount += l.DownloadCount
@@ -174,17 +141,11 @@ func main() {
 	if sinaEnabled {
 		downloadCount += s.DownloadCount
 	}
-	if tomEnabled {
-		downloadCount += t.DownloadCount
-	}
 	if xgooEnabled {
 		downloadCount += x.DownloadCount
 	}
 	if onegreenEnabled {
 		downloadCount += o.DownloadCount
-	}
-	if weiqitvEnabled {
-		downloadCount += w.DownloadCount
 	}
 	if hoetomEnabled {
 		downloadCount += h.DownloadCount
