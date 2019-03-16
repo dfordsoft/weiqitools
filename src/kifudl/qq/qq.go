@@ -1,27 +1,30 @@
-package xgoo
+package qq
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
-	"github.com/dfordsoft/golib/ic"
-	"github.com/dfordsoft/golib/semaphore"
 	"kifudl/util"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
-	"path"
+	"path/filepath"
 	"regexp"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/dfordsoft/golib/ic"
+	"github.com/dfordsoft/golib/semaphore"
+	"github.com/dfordsoft/golib/fsutil"
 )
 
 var (
 	client *http.Client
 )
 
-type Xgoo struct {
+type QQ struct {
 	sync.WaitGroup
 	*semaphore.Semaphore
 	SaveFileEncoding string
@@ -32,25 +35,25 @@ type Xgoo struct {
 	DownloadCount    int32
 }
 
-func (x *Xgoo) downloadKifu(sgf string) {
-	x.Add(1)
-	x.Acquire()
+func (q *QQ) downloadKifu(sgf string) {
+	q.Add(1)
+	q.Acquire()
 	defer func() {
-		x.Release()
-		x.Done()
+		q.Release()
+		q.Done()
 	}()
-	if x.quit {
+	if q.quit {
 		return
 	}
 	retry := 0
 
 	req, err := http.NewRequest("GET", sgf, nil)
 	if err != nil {
-		log.Println("xgoo - Could not parse kifu request:", err)
+		log.Println("qq - Could not parse kifu request:", err)
 		return
 	}
 
-	req.Header.Set("Referer", "http://qipu.xgoo.org/index.php?page=1")
+	req.Header.Set("Referer", "http://qipu.qq.org/indeq.php?page=1")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
@@ -58,7 +61,7 @@ func (x *Xgoo) downloadKifu(sgf string) {
 doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("xgoo - Could not send kifu request:", err)
+		log.Println("qq - Could not send kifu request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -69,7 +72,7 @@ doRequest:
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		log.Println("xgoo - kifu request not 200")
+		log.Println("qq - kifu request not 200")
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -79,7 +82,7 @@ doRequest:
 	}
 	kifu, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("xgoo - cannot read kifu content", err)
+		log.Println("qq - cannot read kifu content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -92,39 +95,58 @@ doRequest:
 	if err != nil {
 		log.Fatal(err)
 	}
-	fullPath := "xgoo/" + u.Path[1:]
+	base := filepath.Base(u.Path)
+	fullPath := filepath.Join("qq", base[:4], base[4:len(base)-8]+".sgf")
 	if util.Exists(fullPath) {
-		if !x.quit && x.QuitIfExists {
+		if !q.quit && q.QuitIfExists {
 			log.Println(fullPath, " exists, just quit")
-			x.quit = true
+			q.quit = true
 		}
 		return
 	}
 
-	dir := path.Dir(fullPath)
-	if !util.Exists(dir) {
+	dir := filepath.Dir(fullPath)
+	if b, e := fsutil.FileExists(dir); e != nil || !b {
 		os.MkdirAll(dir, 0777)
 	}
-	if x.SaveFileEncoding != "gbk" {
-		kifu = ic.Convert("gbk", x.SaveFileEncoding, kifu)
+	if q.SaveFileEncoding != "gbk" {
+		kifu = ic.Convert("gbk", q.SaveFileEncoding, kifu)
 	}
-	ioutil.WriteFile(fullPath, kifu, 0644)
+
+	// extract kifu content
+	leadingStr := []byte(`id="player-container">`)
+	index := bytes.Index(kifu, leadingStr)
+	if index < 0 {
+		return
+	}
+	kifu = kifu[index+len(leadingStr):]
+	endingStr := []byte(`</div>`)
+	index = bytes.Index(kifu, endingStr)
+	if index < 0 {
+		return
+	}
+	kifu = kifu[:index]
+
+	err = ioutil.WriteFile(fullPath, kifu, 0644)
+	if err != nil {
+		log.Println(err)
+	}
 	kifu = nil
-	atomic.AddInt32(&x.DownloadCount, 1)
+	atomic.AddInt32(&q.DownloadCount, 1)
 }
 
-func (x *Xgoo) downloadPage(page int) {
-	x.Add(1)
-	x.Acquire()
+func (q *QQ) downloadPage(page int) {
+	q.Add(1)
+	q.Acquire()
 	defer func() {
-		x.Release()
-		x.Done()
+		q.Release()
+		q.Done()
 	}()
 	retry := 0
-	fullURL := fmt.Sprintf("http://qipu.xgoo.org/index.php?page=%d", page)
+	fullURL := fmt.Sprintf("http://weiqi.qq.com/qipu/index/p/%d.html", page)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
-		log.Println("xgoo - Could not parse page request:", err)
+		log.Println("qq - Could not parse page request:", err)
 		return
 	}
 
@@ -134,7 +156,7 @@ func (x *Xgoo) downloadPage(page int) {
 doPageRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("xgoo - Could not send page request:", err)
+		log.Println("qq - Could not send page request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -146,7 +168,7 @@ doPageRequest:
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("xgoo - cannot read page content", err)
+		log.Println("qq - cannot read page content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -155,30 +177,30 @@ doPageRequest:
 		return
 	}
 
-	regex := regexp.MustCompile(`href=(http:\/\/www\.xgoo\.org\/qipu\/[0-9a-zA-Z\-\_\/]+\.sgf)`)
+	regex := regexp.MustCompile(`href="(\/qipu\/newlist\/id\/[0-9]+\.html)"`)
 	ss := regex.FindAllSubmatch(data, -1)
 	for _, match := range ss {
-		if x.quit {
+		if q.quit {
 			break
 		}
-		sgf := string(match[1])
-		go x.downloadKifu(sgf)
+		sgfURL := "http://weiqi.qq.com" + string(match[1])
+		go q.downloadKifu(sgfURL)
 	}
 }
 
-func (x *Xgoo) Download(w *sync.WaitGroup) {
+func (q *QQ) Download(w *sync.WaitGroup) {
 	defer w.Done()
 	client = &http.Client{
 		Timeout: 30 * time.Second,
 	}
 
-	fmt.Println("xgoo the latest pid", x.LatestPageID)
-	fmt.Println("xgoo the earliest pid", x.EarliestPageID)
+	fmt.Println("qq the latest page id", q.LatestPageID)
+	fmt.Println("qq the earliest page id", q.EarliestPageID)
 
-	for i := x.LatestPageID; i <= x.EarliestPageID && !x.quit; i++ {
-		x.downloadPage(i)
+	for i := q.LatestPageID; i <= q.EarliestPageID && !q.quit; i++ {
+		q.downloadPage(i)
 	}
 
-	x.Wait()
-	fmt.Println("downloaded", x.DownloadCount, " SGF files from Xgoo")
+	q.Wait()
+	fmt.Println("downloaded", q.DownloadCount, " SGF files from QQ")
 }

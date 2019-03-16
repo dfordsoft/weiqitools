@@ -3,8 +3,8 @@ package tom
 import (
 	"fmt"
 	"io/ioutil"
-	"kifudl/ic"
-	"kifudl/semaphore"
+	"github.com/dfordsoft/golib/ic"
+	"github.com/dfordsoft/golib/semaphore"
 	"kifudl/util"
 	"log"
 	"net/http"

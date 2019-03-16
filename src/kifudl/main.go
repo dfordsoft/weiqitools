@@ -6,10 +6,12 @@ import (
 	"kifudl/hoetom"
 	"kifudl/lol"
 	"kifudl/onegreen"
-	"kifudl/semaphore"
+	"kifudl/qq"
 	"kifudl/sina"
 	"kifudl/xgoo"
 	"sync"
+
+	"github.com/dfordsoft/golib/semaphore"
 
 	flag "github.com/ogier/pflag"
 )
@@ -18,7 +20,7 @@ func main() {
 	var quitIfExists bool
 	var saveFileEncoding string
 	var parallelCount int
-	var lolEnabled, xgooEnabled, sinaEnabled, onegreenEnabled, hoetomEnabled, gokifuEnabled bool
+	var lolEnabled, xgooEnabled, sinaEnabled, onegreenEnabled, hoetomEnabled, gokifuEnabled, qqEnabled bool
 	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
 	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
 	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
@@ -28,6 +30,7 @@ func main() {
 	flag.BoolVar(&onegreenEnabled, "onegreen-enabled", true, "fetch kifu from onegreen")
 	flag.BoolVar(&hoetomEnabled, "hoetom-enabled", true, "fetch kifu from hoetom")
 	flag.BoolVar(&gokifuEnabled, "gokifu-enabled", true, "fetch kifu from gokifu")
+	flag.BoolVar(&qqEnabled, "qq-enabled", true, "fetch kifu from qq")
 
 	var hoetomLatestPageID, hoetomEarliestPageID int
 	flag.IntVar(&hoetomLatestPageID, "hoetom-latest-page-id", 1, "the latest page id of hoetom")
@@ -49,6 +52,9 @@ func main() {
 	flag.IntVar(&xgooLatestPageID, "xgoo-latest-page-id", 1, "the latest page id of xgoo")
 	flag.IntVar(&xgooEarliestPageID, "xgoo-earliest-page-id", 1968, "the earliest page id of xgoo")
 
+	var qqLatestPageID, qqEarliestPageID int
+	flag.IntVar(&qqLatestPageID, "qq-latest-page-id", 1, "the latest page id of qq")
+	flag.IntVar(&qqEarliestPageID, "qq-earliest-page-id", 34, "the earliest page id of qq")
 	flag.Parse()
 
 	fmt.Println("Kifu downloader (c) 2016 - 2019 https://minidump.info & me@minidump.info. All right reserved.")
@@ -57,7 +63,7 @@ func main() {
 	fmt.Println("the parallel routines count", parallelCount)
 
 	var wg sync.WaitGroup
-	sem := semaphore.NewSemaphore(parallelCount)
+	sem := semaphore.New(parallelCount)
 	var h *hoetom.Hoetom
 	if hoetomEnabled {
 		h = &hoetom.Hoetom{
@@ -133,6 +139,19 @@ func main() {
 		wg.Add(1)
 		go o.Download(&wg)
 	}
+
+	var q *qq.QQ
+	if qqEnabled {
+		q = &qq.QQ{
+			Semaphore:        sem,
+			SaveFileEncoding: saveFileEncoding,
+			QuitIfExists:     quitIfExists,
+			LatestPageID:     qqLatestPageID,
+			EarliestPageID:   qqEarliestPageID,
+		}
+		wg.Add(1)
+		go q.Download(&wg)
+	}
 	wg.Wait()
 	var downloadCount int32
 	if lolEnabled {
@@ -152,6 +171,9 @@ func main() {
 	}
 	if gokifuEnabled {
 		downloadCount += g.DownloadCount
+	}
+	if qqEnabled {
+		downloadCount += q.DownloadCount
 	}
 	fmt.Println("total downloaded ", downloadCount, " SGFs")
 	var c byte
