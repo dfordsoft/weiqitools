@@ -1,4 +1,4 @@
-package hoetom
+package hotongo
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ var (
 	client *http.Client
 )
 
-type Hoetom struct {
+type hotongo struct {
 	sync.WaitGroup
 	*semaphore.Semaphore
 	sessionID        string
@@ -37,17 +37,17 @@ type Hoetom struct {
 	DownloadCount    int32
 }
 
-func (h *Hoetom) getSessionID() {
-	fullURL := fmt.Sprintf("http://www.hoetom.com/servlet/login")
+func (h *hotongo) getSessionID() {
+	fullURL := fmt.Sprintf("http://www.hotongo.com/servlet/login")
 	postBody := fmt.Sprintf("userid=%s&passwd=%s&passwdmd5=%s", h.userID, h.password, h.passwordMd5)
 	req, err := http.NewRequest("POST", fullURL, strings.NewReader(postBody))
 	if err != nil {
-		log.Println("hoetom - Could not parse login request:", err)
+		log.Println("hotongo - Could not parse login request:", err)
 		return
 	}
 
-	req.Header.Set("Origin", "http://www.hoetom.com")
-	req.Header.Set("Referer", "http://www.hoetom.com/index.jsp")
+	req.Header.Set("Origin", "http://www.hotongo.com")
+	req.Header.Set("Referer", "http://www.hotongo.com/index.jsp")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
@@ -55,7 +55,7 @@ func (h *Hoetom) getSessionID() {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("hoetom - Could not send login request:", err)
+		log.Println("hotongo - Could not send login request:", err)
 		return
 	}
 
@@ -71,10 +71,10 @@ func (h *Hoetom) getSessionID() {
 			}
 		}
 	}
-	log.Println("hoetom - cannot get session id")
+	log.Println("hotongo - cannot get session id")
 }
 
-func (h *Hoetom) downloadKifu(id int) {
+func (h *hotongo) downloadKifu(id int) {
 	h.Add(1)
 	h.Acquire()
 	defer func() {
@@ -85,15 +85,15 @@ func (h *Hoetom) downloadKifu(id int) {
 		return
 	}
 	retry := 0
-	fullURL := fmt.Sprintf("http://www.hoetom.com/chessmanual.jsp?id=%d", id)
+	fullURL := fmt.Sprintf("http://www.hotongo.com/chessmanual.jsp?id=%d", id)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
-		log.Println("hoetom - Could not parse kifu request:", err)
+		log.Println("hotongo - Could not parse kifu request:", err)
 		return
 	}
 
-	req.Header.Set("Origin", "http://www.hoetom.com")
-	req.Header.Set("Referer", "http://www.hoetom.com/matchlatest_pro.jsp")
+	req.Header.Set("Origin", "http://www.hotongo.com")
+	req.Header.Set("Referer", "http://www.hotongo.com/matchlatest_pro.jsp")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
@@ -102,7 +102,7 @@ func (h *Hoetom) downloadKifu(id int) {
 doRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("hoetom - Could not send kifu request:", err)
+		log.Println("hotongo - Could not send kifu request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -113,7 +113,7 @@ doRequest:
 
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		log.Println("hoetom - kifu request not 200:", resp.StatusCode, fullURL)
+		log.Println("hotongo - kifu request not 200:", resp.StatusCode, fullURL)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -123,7 +123,7 @@ doRequest:
 	}
 	kifu, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("hoetom - cannot read kifu content", err)
+		log.Println("hotongo - cannot read kifu content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -133,7 +133,7 @@ doRequest:
 	}
 	ss := strings.Split(resp.Header.Get("Content-Disposition"), ";")
 	if len(ss) < 2 {
-		log.Println("hoetom - cannot get content-disposition")
+		log.Println("hotongo - cannot get content-disposition")
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -144,7 +144,7 @@ doRequest:
 	filename := strings.Split(ss[1], "=")[1]
 	filename = filename[1 : len(filename)-1]
 	filename = ic.ConvertString("gbk", "utf-8", filename)
-	dir := fmt.Sprintf("hoetom/%d", id/1000)
+	dir := fmt.Sprintf("hotongo/%d", id/1000)
 	if !util.Exists(dir) {
 		os.MkdirAll(dir, 0777)
 	}
@@ -164,7 +164,7 @@ doRequest:
 	atomic.AddInt32(&h.DownloadCount, 1)
 }
 
-func (h *Hoetom) downloadPage(page int) {
+func (h *hotongo) downloadPage(page int) {
 	h.Add(1)
 	h.Acquire()
 	defer func() {
@@ -172,15 +172,15 @@ func (h *Hoetom) downloadPage(page int) {
 		h.Done()
 	}()
 	retry := 0
-	fullURL := fmt.Sprintf("http://www.hoetom.com/matchlatest_2011.jsp?pn=%d", page)
+	fullURL := fmt.Sprintf("http://www.hotongo.com/matchlatest_2011.jsp?pn=%d", page)
 	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
-		log.Println("hoetom - Could not parse page request:", err)
+		log.Println("hotongo - Could not parse page request:", err)
 		return
 	}
 
-	req.Header.Set("Origin", "http://www.hoetom.com")
-	req.Header.Set("Referer", "http://www.hoetom.com/matchlatest_2011.jsp")
+	req.Header.Set("Origin", "http://www.hotongo.com")
+	req.Header.Set("Referer", "http://www.hotongo.com/matchlatest_2011.jsp")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:45.0) Gecko/20100101 Firefox/45.0")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
 	req.Header.Set("accept-language", `en-US,en;q=0.8`)
@@ -189,7 +189,7 @@ func (h *Hoetom) downloadPage(page int) {
 doPageRequest:
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println("hoetom - Could not send page request:", err)
+		log.Println("hotongo - Could not send page request:", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -201,7 +201,7 @@ doPageRequest:
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Println("hoetom - cannot read page content", err)
+		log.Println("hotongo - cannot read page content", err)
 		retry++
 		if retry < 3 {
 			time.Sleep(3 * time.Second)
@@ -226,21 +226,21 @@ doPageRequest:
 	}
 }
 
-func (h *Hoetom) Download(w *sync.WaitGroup) {
+func (h *hotongo) Download(w *sync.WaitGroup) {
 	defer w.Done()
 	client = &http.Client{
 		Timeout: 30 * time.Second,
 	}
 
 	h.getSessionID()
-	fmt.Println("hoetom the latest pid", h.LatestPageID)
-	fmt.Println("hoetom the earliest pid", h.EarliestPageID)
-	fmt.Println("hoetom session id", h.sessionID)
+	fmt.Println("hotongo the latest pid", h.LatestPageID)
+	fmt.Println("hotongo the earliest pid", h.EarliestPageID)
+	fmt.Println("hotongo session id", h.sessionID)
 
 	for i := h.LatestPageID; i <= h.EarliestPageID && !h.quit; i++ {
 		h.downloadPage(i)
 	}
 
 	h.Wait()
-	fmt.Println("downloaded", h.DownloadCount, " SGF files from Hoetom")
+	fmt.Println("downloaded", h.DownloadCount, " SGF files from hotongo")
 }

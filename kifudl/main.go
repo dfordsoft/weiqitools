@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/missdeer/weiqitools/kifudl/gokifu"
-	"github.com/missdeer/weiqitools/kifudl/hoetom"
+	"github.com/missdeer/weiqitools/kifudl/hotongo"
 	"github.com/missdeer/weiqitools/kifudl/lol"
 	"github.com/missdeer/weiqitools/kifudl/onegreen"
 	"github.com/missdeer/weiqitools/kifudl/qq"
@@ -20,7 +20,7 @@ func main() {
 	var quitIfExists bool
 	var saveFileEncoding string
 	var parallelCount int
-	var lolEnabled, xgooEnabled, sinaEnabled, onegreenEnabled, hoetomEnabled, gokifuEnabled, qqEnabled bool
+	var lolEnabled, xgooEnabled, sinaEnabled, onegreenEnabled, hotongoEnabled, gokifuEnabled, qqEnabled bool
 	flag.StringVar(&saveFileEncoding, "encoding", "gbk", "save SGF file encoding")
 	flag.BoolVar(&quitIfExists, "q", true, "quit if the target file exists")
 	flag.IntVar(&parallelCount, "p", 20, "the parallel routines count")
@@ -28,13 +28,13 @@ func main() {
 	flag.BoolVar(&xgooEnabled, "xgoo-enabled", true, "fetch kifu from xgoo")
 	flag.BoolVar(&sinaEnabled, "sina-enabled", true, "fetch kifu from sina")
 	flag.BoolVar(&onegreenEnabled, "onegreen-enabled", true, "fetch kifu from onegreen")
-	flag.BoolVar(&hoetomEnabled, "hoetom-enabled", true, "fetch kifu from hoetom")
+	flag.BoolVar(&hotongoEnabled, "hotongo-enabled", true, "fetch kifu from hotongo")
 	flag.BoolVar(&gokifuEnabled, "gokifu-enabled", true, "fetch kifu from gokifu")
 	flag.BoolVar(&qqEnabled, "qq-enabled", true, "fetch kifu from qq")
 
-	var hoetomLatestPageID, hoetomEarliestPageID int
-	flag.IntVar(&hoetomLatestPageID, "hoetom-latest-page-id", 1, "the latest page id of hoetom")
-	flag.IntVar(&hoetomEarliestPageID, "hoetom-earliest-page-id", 1045, "the earliest page id of hoetom")
+	var hotongoLatestPageID, hotongoEarliestPageID int
+	flag.IntVar(&hotongoLatestPageID, "hotongo-latest-page-id", 1, "the latest page id of hotongo")
+	flag.IntVar(&hotongoEarliestPageID, "hotongo-earliest-page-id", 1045, "the earliest page id of hotongo")
 
 	var lolLatestID, lolEarliestID int
 	flag.IntVar(&lolLatestID, "lol-latest-id", 0, "the latest pid of 101weiqi")
@@ -64,14 +64,14 @@ func main() {
 
 	var wg sync.WaitGroup
 	sem := semaphore.New(parallelCount)
-	var h *hoetom.Hoetom
-	if hoetomEnabled {
-		h = &hoetom.Hoetom{
+	var h *hotongo.hotongo
+	if hotongoEnabled {
+		h = &hotongo.hotongo{
 			Semaphore:        sem,
 			SaveFileEncoding: saveFileEncoding,
 			QuitIfExists:     quitIfExists,
-			LatestPageID:     hoetomLatestPageID,
-			EarliestPageID:   hoetomEarliestPageID,
+			LatestPageID:     hotongoLatestPageID,
+			EarliestPageID:   hotongoEarliestPageID,
 		}
 		wg.Add(1)
 		go h.Download(&wg)
@@ -166,7 +166,7 @@ func main() {
 	if onegreenEnabled {
 		downloadCount += o.DownloadCount
 	}
-	if hoetomEnabled {
+	if hotongoEnabled {
 		downloadCount += h.DownloadCount
 	}
 	if gokifuEnabled {
