@@ -22,7 +22,7 @@ var (
 	client *http.Client
 )
 
-type hotongo struct {
+type Hotongo struct {
 	sync.WaitGroup
 	*semaphore.Semaphore
 	sessionID        string
@@ -37,7 +37,7 @@ type hotongo struct {
 	DownloadCount    int32
 }
 
-func (h *hotongo) getSessionID() {
+func (h *Hotongo) getSessionID() {
 	fullURL := fmt.Sprintf("http://www.hotongo.com/servlet/login")
 	postBody := fmt.Sprintf("userid=%s&passwd=%s&passwdmd5=%s", h.userID, h.password, h.passwordMd5)
 	req, err := http.NewRequest("POST", fullURL, strings.NewReader(postBody))
@@ -74,7 +74,7 @@ func (h *hotongo) getSessionID() {
 	log.Println("hotongo - cannot get session id")
 }
 
-func (h *hotongo) downloadKifu(id int) {
+func (h *Hotongo) downloadKifu(id int) {
 	h.Add(1)
 	h.Acquire()
 	defer func() {
@@ -164,7 +164,7 @@ doRequest:
 	atomic.AddInt32(&h.DownloadCount, 1)
 }
 
-func (h *hotongo) downloadPage(page int) {
+func (h *Hotongo) downloadPage(page int) {
 	h.Add(1)
 	h.Acquire()
 	defer func() {
@@ -226,7 +226,7 @@ doPageRequest:
 	}
 }
 
-func (h *hotongo) Download(w *sync.WaitGroup) {
+func (h *Hotongo) Download(w *sync.WaitGroup) {
 	defer w.Done()
 	client = &http.Client{
 		Timeout: 30 * time.Second,

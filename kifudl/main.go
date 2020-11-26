@@ -64,9 +64,9 @@ func main() {
 
 	var wg sync.WaitGroup
 	sem := semaphore.New(parallelCount)
-	var h *hotongo.hotongo
+	var h *hotongo.Hotongo
 	if hotongoEnabled {
-		h = &hotongo.hotongo{
+		h = &hotongo.Hotongo{
 			Semaphore:        sem,
 			SaveFileEncoding: saveFileEncoding,
 			QuitIfExists:     quitIfExists,
