@@ -34,7 +34,7 @@ func main() {
 
 	var hotongoLatestPageID, hotongoEarliestPageID int
 	flag.IntVar(&hotongoLatestPageID, "hotongo-latest-page-id", 1, "the latest page id of hotongo")
-	flag.IntVar(&hotongoEarliestPageID, "hotongo-earliest-page-id", 1045, "the earliest page id of hotongo")
+	flag.IntVar(&hotongoEarliestPageID, "hotongo-earliest-page-id", 1433, "the earliest page id of hotongo")
 
 	var lolLatestID, lolEarliestID int
 	flag.IntVar(&lolLatestID, "lol-latest-id", 0, "the latest pid of 101weiqi")
