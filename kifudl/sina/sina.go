@@ -3,9 +3,9 @@ package sina
 import (
 	"fmt"
 	"io/ioutil"
-	"github.com/dfordsoft/golib/ic"
-	"github.com/dfordsoft/golib/semaphore"
-	"kifudl/util"
+	"github.com/missdeer/golib/ic"
+	"github.com/missdeer/golib/semaphore"
+	"github.com/missdeer/weiqitools/kifudl/util"
 	"log"
 	"net/http"
 	"net/url"

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"kifudl/util"
+	"github.com/missdeer/weiqitools/kifudl/util"
 	"log"
 	"net/http"
 	"net/url"
@@ -15,9 +15,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dfordsoft/golib/ic"
-	"github.com/dfordsoft/golib/semaphore"
-	"github.com/dfordsoft/golib/fsutil"
+	"github.com/missdeer/golib/ic"
+	"github.com/missdeer/golib/semaphore"
+	"github.com/missdeer/golib/fsutil"
 )
 
 var (

@@ -2,16 +2,16 @@ package main
 
 import (
 	"fmt"
-	"kifudl/gokifu"
-	"kifudl/hoetom"
-	"kifudl/lol"
-	"kifudl/onegreen"
-	"kifudl/qq"
-	"kifudl/sina"
-	"kifudl/xgoo"
+	"github.com/missdeer/weiqitools/kifudl/gokifu"
+	"github.com/missdeer/weiqitools/kifudl/hoetom"
+	"github.com/missdeer/weiqitools/kifudl/lol"
+	"github.com/missdeer/weiqitools/kifudl/onegreen"
+	"github.com/missdeer/weiqitools/kifudl/qq"
+	"github.com/missdeer/weiqitools/kifudl/sina"
+	"github.com/missdeer/weiqitools/kifudl/xgoo"
 	"sync"
 
-	"github.com/dfordsoft/golib/semaphore"
+	"github.com/missdeer/golib/semaphore"
 
 	flag "github.com/ogier/pflag"
 )
